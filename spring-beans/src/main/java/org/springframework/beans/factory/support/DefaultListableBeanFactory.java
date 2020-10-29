@@ -777,10 +777,34 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 	// Implementation of ConfigurableListableBeanFactory interface
 	//---------------------------------------------------------------------
 
+	//---------------------------------------------------------------------
+	// 1. 注册依赖类型和自动注入值
+	//---------------------------------------------------------------------
+
+	/**
+	 * @param dependencyType the dependency type to register. This will typically
+	 * be a base interface such as BeanFactory, with extensions of it resolved
+	 * as well if declared as an autowiring dependency (e.g. ListableBeanFactory),
+	 * as long as the given value actually implements the extended interface.
+	 * 参数依赖项键入要注册的依赖类型。这通常是一个基本接口，例如BeanFactory，并且只要声明为自动装配依赖项（例如ListableBeanFactory），
+	 * 它的扩展名也可以解析，只要给定值实际实现扩展接口即可。
+	 *
+	 * @param autowiredValue the corresponding autowired value. This may also be an
+	 * implementation of the {@link org.springframework.beans.factory.ObjectFactory}
+	 * 相应的自动装配值。可能是{@link org.springframework.beans.factory.ObjectFactory}的实现。主要是为了让注入点能够被延迟注入。
+	 *
+	 * 注册可以解析的依赖关系，当注入的类型为dependencyType的时候，注入autowiredValue。
+	 * 注入类型与注入值的关系存储在map中。
+	 * private final Map<Class<?>, Object> resolvableDependencies = new ConcurrentHashMap<>(16)
+	 */
 	@Override
 	public void registerResolvableDependency(Class<?> dependencyType, @Nullable Object autowiredValue) {
 		Assert.notNull(dependencyType, "Dependency type must not be null");
 		if (autowiredValue != null) {
+			// ObjectFactory只是一个普通的对象工厂接口。
+			// instanceof和isInstance?
+			// ObjectFactory和FactoryBean?
+			// autowiredValue instanceof ObjectFactory什么意思?
 			if (!(autowiredValue instanceof ObjectFactory || dependencyType.isInstance(autowiredValue))) {
 				throw new IllegalArgumentException("Value [" + autowiredValue +
 						"] does not implement specified dependency type [" + dependencyType.getName() + "]");
@@ -789,6 +813,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 		}
 	}
 
+	// AutowireCandidate是什么?
 	@Override
 	public boolean isAutowireCandidate(String beanName, DependencyDescriptor descriptor)
 			throws NoSuchBeanDefinitionException {
@@ -799,6 +824,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 	/**
 	 * Determine whether the specified bean definition qualifies as an autowire candidate,
 	 * to be injected into other beans which declare a dependency of matching type.
+	 * 设置当前bean在被其他对象作为自动注入对象的时候，是否作为候选bean，默认值是true。
 	 * @param beanName the name of the bean definition to check
 	 * @param descriptor the descriptor of the dependency to resolve
 	 * @param resolver the AutowireCandidateResolver to use for the actual resolution algorithm
@@ -807,20 +833,33 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 	protected boolean isAutowireCandidate(
 			String beanName, DependencyDescriptor descriptor, AutowireCandidateResolver resolver)
 			throws NoSuchBeanDefinitionException {
-
+		// transformedBeanName(name)是为了获取Bean真正的名称，它会去掉name前面的'&'
+		// 传入的name也可以是别名,但是也需要做转换
 		String bdName = BeanFactoryUtils.transformedBeanName(beanName);
+
+		// 从注册表中或者已经创建的单例集合中判断
+
+		// 判断 BeanDefinition 实例是否在注册表中（是否注册）1
 		if (containsBeanDefinition(bdName)) {
 			return isAutowireCandidate(beanName, getMergedLocalBeanDefinition(bdName), descriptor, resolver);
 		}
+		// 判断singletonObjects集合中是否存在bean对象
 		else if (containsSingleton(beanName)) {
 			return isAutowireCandidate(beanName, new RootBeanDefinition(getType(beanName)), descriptor, resolver);
 		}
 
+		// 否则判断父类类型
+
+		// 获取父容器
 		BeanFactory parent = getParentBeanFactory();
+		// DefaultListableBeanFactory是整个bean加载的核心部分，是spring注册及加载bean的默认实现。
+		// 如果父类是DefaultListableBeanFactory类型
 		if (parent instanceof DefaultListableBeanFactory) {
 			// No bean definition found in this factory -> delegate to parent.
 			return ((DefaultListableBeanFactory) parent).isAutowireCandidate(beanName, descriptor, resolver);
 		}
+		// ConfigurableListableBeanFactory接口：实现对工厂的配置以及对bean属性的自动装配。
+		// 如果父类是ConfigurableListableBeanFactory接口类型
 		else if (parent instanceof ConfigurableListableBeanFactory) {
 			// If no DefaultListableBeanFactory, can't pass the resolver along.
 			return ((ConfigurableListableBeanFactory) parent).isAutowireCandidate(beanName, descriptor);
@@ -828,6 +867,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 		else {
 			return true;
 		}
+
 	}
 
 	/**
