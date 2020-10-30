@@ -849,6 +849,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 		}
 
 		// 否则判断父类类型
+		// 为什么判断父类类型？？？
 
 		// 获取父容器
 		BeanFactory parent = getParentBeanFactory();
@@ -871,18 +872,35 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 	}
 
 	/**
-	 * Determine whether the specified bean definition qualifies as an autowire candidate,
-	 * to be injected into other beans which declare a dependency of matching type.
-	 * @param beanName the name of the bean definition to check
 	 * @param mbd the merged bean definition to check
-	 * @param descriptor the descriptor of the dependency to resolve
-	 * @param resolver the AutowireCandidateResolver to use for the actual resolution algorithm
-	 * @return whether the bean should be considered as autowire candidate
+	 * RootBeanDefinition是什么？
+	 * RootBeanDefinition，ChildBeanDefinition，GenericBeanDefinition均继承了AbstractBeanDefiniton
+	 * 其中BeanDefinition是配置文件元素标签在容器中内部表示形式。
+	 * 元素标签拥有class、scope、lazy-init等配置属性，BeanDefinition则提供了相应的beanClass、scope、lazyInit属性，BeanDefinition和配置属性是一一对应的。
+	 * RootBeanDefinition是最常用的实现类，它对应一般性的元素标签：
+	 * 	RootBeanDefiniiton保存了以下信息
+	 * 	1.定义了id、别名与Bean的对应关系（BeanDefinitionHolder）
+	 * 	2.Bean的注解（AnnotatedElement）
+	 * 	3.具体的工厂方法（Class类型），包括工厂方法的返回类型，工厂方法的Method对象
+	 * 	4.构造函数、构造函数形参类型
+	 * 	5.Bean的class对象
+	 * GenericBeanDefinition是自2.5以后新加入的bean文件配置属性定义类，是一站式服务类。
+	 * 在配置文件中可以定义父和子，父用RootBeanDefinition表示，而子用ChildBeanDefiniton表示，而没有父的就使用RootBeanDefinition表示。
+	 * AbstractBeanDefinition对两者共同的类信息进行抽象。
+	 *
+	 * Spring通过BeanDefinition将配置文件中的配置信息转换为容器的内部表示，并将这些BeanDefiniton注册到BeanDefinitonRegistry中。
+	 * Spring容器的BeanDefinitionRegistry就像是Spring配置信息的内存数据库，主要是以map的形式保存，后续操作直接从BeanDefinitionRegistry中读取配置信息。
+	 * 一般情况下，BeanDefinition只在容器启动时加载并解析，除非容器刷新或重启，这些信息不会发生变化，当然如果用户有特殊的需求，也可以通过编程的方式在运行期调整BeanDefinition的定义。
 	 */
 	protected boolean isAutowireCandidate(String beanName, RootBeanDefinition mbd,
 			DependencyDescriptor descriptor, AutowireCandidateResolver resolver) {
 
 		String bdName = BeanFactoryUtils.transformedBeanName(beanName);
+		// resolveBeanClass方法判断需要创建的Bean的class是否可以实例化，是否可以通过类加载器进行加载，可以看成对Class的校验。
+		// 确保类可以被正确解析，因为在Bean定义的时候可能没有特定的类，而只提供类名，或者有些被加密过的类，都是在这个方法中进行处理。
+		// 其实在xml中配置的bean标签，有一个属性class 属性，里面配置了类的包名和类名。 这个方法执行的代码，总结一下话核心可能就一段代码 就是 Class.forName()。
+		// 当然了Spring并没有这么直白，在其之上有进行了代码的封装。 它就是 ClassUtils.forName() ,
+
 		resolveBeanClass(mbd, bdName);
 		if (mbd.isFactoryMethodUnique && mbd.factoryMethodToIntrospect == null) {
 			new ConstructorResolver(this).resolveFactoryMethodIfPossible(mbd);
