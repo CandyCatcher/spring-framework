@@ -47,6 +47,13 @@ import org.springframework.util.StringUtils;
  * {@link org.springframework.beans.factory.config.AutowireCapableBeanFactory}
  * interface.
  *
+ * 继承了BeanMetadataAttributeAccessor，可以对BeanMetadataAttribute集和进行访问；
+ * 实现了BeanDefinition接口，对beanDefinition的各个属性get/set进行了实现；
+ * 还提供了自动装配类型，生存范围，lazyInit，依赖检查等一些附加属性的支持；
+ * 还提供了beanDefinition的各个属性的默认值
+ *
+ * 现在的问题是谁调用的AbstractBeanDefinition？
+ *
  * @author Rod Johnson
  * @author Juergen Hoeller
  * @author Rob Harrop
@@ -62,29 +69,34 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	/**
 	 * Constant for the default scope name: {@code ""}, equivalent to singleton
 	 * status unless overridden from a parent bean definition (if applicable).
+	 * 默认作用域的名称：“”，相当于单身状态，但是从父bean定义（如适用）所覆盖
 	 */
 	public static final String SCOPE_DEFAULT = "";
 
 	/**
 	 * Constant that indicates no external autowiring at all.
+	 * 默认不进行自动装配
 	 * @see #setAutowireMode
 	 */
 	public static final int AUTOWIRE_NO = AutowireCapableBeanFactory.AUTOWIRE_NO;
 
 	/**
 	 * Constant that indicates autowiring bean properties by name.
+	 * 表示按name自动装配bean的属性
 	 * @see #setAutowireMode
 	 */
 	public static final int AUTOWIRE_BY_NAME = AutowireCapableBeanFactory.AUTOWIRE_BY_NAME;
 
 	/**
 	 * Constant that indicates autowiring bean properties by type.
+	 * 指示按类型自动装配bean的属性
 	 * @see #setAutowireMode
 	 */
 	public static final int AUTOWIRE_BY_TYPE = AutowireCapableBeanFactory.AUTOWIRE_BY_TYPE;
 
 	/**
 	 * Constant that indicates autowiring a constructor.
+	 *
 	 * @see #setAutowireMode
 	 */
 	public static final int AUTOWIRE_CONSTRUCTOR = AutowireCapableBeanFactory.AUTOWIRE_CONSTRUCTOR;
@@ -92,6 +104,7 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	/**
 	 * Constant that indicates determining an appropriate autowire strategy
 	 * through introspection of the bean class.
+	 * 指示不依赖检查
 	 * @see #setAutowireMode
 	 * @deprecated as of Spring 3.0: If you are using mixed autowiring strategies,
 	 * use annotation-based autowiring for clearer demarcation of autowiring needs.
@@ -101,18 +114,21 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 
 	/**
 	 * Constant that indicates no dependency check at all.
+	 * 表示为对象引用的依赖检查
 	 * @see #setDependencyCheck
 	 */
 	public static final int DEPENDENCY_CHECK_NONE = 0;
 
 	/**
 	 * Constant that indicates dependency checking for object references.
+	 * 表示为对象引用的依赖检查
 	 * @see #setDependencyCheck
 	 */
 	public static final int DEPENDENCY_CHECK_OBJECTS = 1;
 
 	/**
 	 * Constant that indicates dependency checking for "simple" properties.
+	 * 指出“简单”的属性的依赖检查
 	 * @see #setDependencyCheck
 	 * @see org.springframework.beans.BeanUtils#isSimpleProperty
 	 */
@@ -121,6 +137,7 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	/**
 	 * Constant that indicates dependency checking for all properties
 	 * (object references as well as "simple" properties).
+	 * 对所有属性的依赖进行检查
 	 * @see #setDependencyCheck
 	 */
 	public static final int DEPENDENCY_CHECK_ALL = 3;
@@ -134,8 +151,16 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	 * name.
 	 * <p>Currently, the method names detected during destroy method inference
 	 * are "close" and "shutdown", if present on the specific bean class.
+	 * 若Bean未指定销毁方法，容器应该尝试推断Bean的销毁方法的名字，目前来说，推断的销毁方法的名字一般为close或是shutdown
+	 * （即未指定Bean的销毁方法，但是内部定义了名为close或是shutdown的方法，则容器推断其为销毁方法）
+	 *
+	 * infer:推断的
 	 */
 	public static final String INFER_METHOD = "(inferred)";
+
+	//---------------------------------------------------------------------
+	// BeanDefinition接口的属性
+	//---------------------------------------------------------------------
 
 
 	@Nullable
@@ -204,6 +229,10 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	private Resource resource;
 
 
+	//---------------------------------------------------------------------
+	// 构造方法
+	//---------------------------------------------------------------------
+
 	/**
 	 * Create a new AbstractBeanDefinition with default settings.
 	 */
@@ -224,9 +253,14 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	 * Create a new AbstractBeanDefinition as a deep copy of the given
 	 * bean definition.
 	 * @param original the original bean definition to copy from
+	 *
+	 * 初始化的时候就将这些属性设置了
+	 * 创建一个新的AbstractBeanDefinition并深入拷贝给定的BeanDefinition实例
+	 *
 	 */
 	protected AbstractBeanDefinition(BeanDefinition original) {
 		setParentName(original.getParentName());
+		// 在初始化的时候九江beanClassName设置了
 		setBeanClassName(original.getBeanClassName());
 		setScope(original.getScope());
 		setAbstract(original.isAbstract());
@@ -279,10 +313,15 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	}
 
 
+	//---------------------------------------------------------------------
+	// 其它方法
+	//---------------------------------------------------------------------
+
 	/**
 	 * Override settings in this bean definition (presumably a copied parent
 	 * from a parent-child inheritance relationship) from the given bean
 	 * definition (presumably the child).
+	 * 从给定beanDefinition（可能是子对象）定义此beanDefinition（可能是从父子继承关系复制的父对象）中的设置。
 	 * <ul>
 	 * <li>Will override beanClass if specified in the given bean definition.
 	 * <li>Will always take {@code abstract}, {@code scope},
@@ -388,6 +427,7 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 
 	/**
 	 * Return the current bean class name of this bean definition.
+	 * 获取beanClassName
 	 */
 	@Override
 	@Nullable
@@ -431,12 +471,15 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	 * @see #resolveBeanClass(ClassLoader)
 	 */
 	public Class<?> getBeanClass() throws IllegalStateException {
+		// beanClass 不是 bean 的实例，是bean的Class对象
 		Object beanClassObject = this.beanClass;
 		if (beanClassObject == null) {
 			throw new IllegalStateException("No bean class specified on bean definition");
 		}
+		// 判断是不是Class类型的
 		if (!(beanClassObject instanceof Class)) {
 			throw new IllegalStateException(
+					//说明bean没有加载成Class类
 					"Bean class name [" + beanClassObject + "] has not been resolved into an actual Class");
 		}
 		return (Class<?>) beanClassObject;
@@ -480,6 +523,10 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	public ResolvableType getResolvableType() {
 		return (hasBeanClass() ? ResolvableType.forClass(getBeanClass()) : ResolvableType.NONE);
 	}
+
+	//---------------------------------------------------------------------
+	// 对BeanDefinition方法的实现
+	//---------------------------------------------------------------------
 
 	/**
 	 * Set the name of the target scope for the bean.
@@ -574,6 +621,10 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	public Boolean getLazyInit() {
 		return this.lazyInit;
 	}
+
+	//---------------------------------------------------------------------
+	// 自己的属性设置
+	//---------------------------------------------------------------------
 
 	/**
 	 * Set the autowire mode. This determines whether any automagical detection
