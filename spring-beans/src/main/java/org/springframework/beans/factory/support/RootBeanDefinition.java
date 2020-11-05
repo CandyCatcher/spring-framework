@@ -46,6 +46,23 @@ import org.springframework.util.Assert;
  * GenericBeanDefinition has the advantage that it allows to dynamically define
  * parent dependencies, not 'hard-coding' the role as a root bean definition.
  *
+ * RootBeanDefinition 用于在 Spring BeanFactory 运行时接受多个bean definition合并的信息，
+ * 它可能是由多个存在继承关系的 bean definition 合并得到的，本质上 RootBeanDefinition 是 bean definition 在运行时的统一视图。
+ * 在spring beanFactory运行期间，可以返回一个特定的bean。
+ * RootBeanDefinition是一个重要的通用的bean definition 视图。
+ *
+ * 之前RootBeanDefinition用来在配置阶段进行注册bean definition。
+ * 但是从spring 2.5后，编写注册bean definition有了更好的的方法：GenericBeanDefinition。
+ *
+ * GenericBeanDefinition支持动态定义父类依赖，而非硬编码作为root bean definition。（硬编码？）
+ * 涉及到的类：BeanDefinitionHolder，根据名称或者别名持有beanDefinition。
+ * 可以为一个内部bean 注册为placeholder。
+ * BeanDefinitionHolder也可以编写一个内部bean definition的注册，如果你不关注BeanNameAware等，完全可以使用RootBeanDefinition或者ChildBeanDefinition来替代
+ *
+ * 自我感觉RootBeanDefinition在AbstractBeanDefinition基础上添加了更多的属性
+ *
+ * 可以单独作为BeanDefinition，或者是其它BeanDefinition的父类，不能作为子类
+ *
  * @author Rod Johnson
  * @author Juergen Hoeller
  * @see GenericBeanDefinition
@@ -59,27 +76,33 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 	@Nullable
 	private BeanDefinitionHolder decoratedDefinition;
 
-	// AnnotatedElement 是java反射包的接口，通过它可以查看Bean的注解信息
-	// 使用一下？
+	/** AnnotatedElement 是java反射包的接口，通过它可以查看Bean的注解信息 */
 	@Nullable
 	private AnnotatedElement qualifiedElement;
 
 	/** Determines if the definition needs to be re-merged. */
 	volatile boolean stale;
 
-	// 默认允许缓存
+	/**
+	 * 默认允许缓存
+	 */
 	boolean allowCaching = true;
 
-	// 工厂方法是否唯一
+	/**
+	 * 工厂方法是否唯一
+ 	 */
 	boolean isFactoryMethodUnique;
 
-	// 封装了java.lang.reflect.Type,提供了泛型相关的操作
-	// ResolvableType 可以专题去了解一下子，虽然比较简单 但常见
+	/**
+	 * 封装了java.lang.reflect.Type,提供了泛型相关的操作
+	 * ResolvableType 可以专题去了解一下子，虽然比较简单 但常见
+ 	 */
 	@Nullable
 	volatile ResolvableType targetType;
 
-	/** Package-visible field for caching the determined Class of a given bean definition. */
-	// 缓存class，表明RootBeanDefinition存储哪个类的信息
+	/** Package-visible field for caching the determined Class of a given bean definition.
+	 * 缓存class，表明RootBeanDefinition存储哪个类的信息
+	 * */
 	@Nullable
 	volatile Class<?> resolvedTargetType;
 
@@ -87,8 +110,8 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 	@Nullable
 	volatile Boolean isFactoryBean;
 
-	/** Package-visible field for caching the return type of a generically typed factory method. */
-	// 缓存工厂方法的返回类型
+	/** Package-visible field for caching the return type of a generically typed factory method.
+	 * 缓存工厂方法的返回类型*/
 	@Nullable
 	volatile ResolvableType factoryMethodReturnType;
 
@@ -96,55 +119,62 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 	@Nullable
 	volatile Method factoryMethodToIntrospect;
 
-	/** Common lock for the four constructor fields below. */
+	/** Common lock for the four constructor fields below.
+	 * 一个公共的锁对象，操作下面四个构造函数相关的属性时会用到
+	 */
 	final Object constructorArgumentLock = new Object();
 
-	/** Package-visible field for caching the resolved constructor or factory method. */
-	// 缓存已经解析的构造函数或是工厂方法，Executable是Method、Constructor类型的父类
+	/** Package-visible field for caching the resolved constructor or factory method.
+	 * 缓存已经解析的构造函数或是工厂方法，Executable是Method、Constructor类型的父类*/
+	// TODO 怎么缓存的？
 	@Nullable
 	Executable resolvedConstructorOrFactoryMethod;
 
-	/** Package-visible field that marks the constructor arguments as resolved. */
-	// 构造函数参数是否解析完毕
+	/** Package-visible field that marks the constructor arguments as resolved.
+	 * 构造函数参数是否解析完毕*/
 	boolean constructorArgumentsResolved = false;
 
-	/** Package-visible field for caching fully resolved constructor arguments. */
-	// 缓存完全解析的构造函数参数
+	/** Package-visible field for caching fully resolved constructor arguments.
+	 * 缓存完全解析的构造函数参数*/
 	@Nullable
 	Object[] resolvedConstructorArguments;
 
-	/** Package-visible field for caching partly prepared constructor arguments. */
-	// 缓存待解析的构造函数参数，即还没有找到对应的实例，可以理解为还没有注入依赖的形参
+	/** Package-visible field for caching partly prepared constructor arguments.
+	 * 缓存待解析的构造函数参数，即还没有找到对应的实例，可以理解为还没有注入依赖的形参*/
 	@Nullable
 	Object[] preparedConstructorArguments;
 
 	/** Common lock for the two post-processing fields below. */
 	final Object postProcessingLock = new Object();
 
-	/** Package-visible field that indicates MergedBeanDefinitionPostProcessor having been applied. */
-	// 是否被MergedBeanDefinitionPostProcessor处理过
+	/** Package-visible field that indicates MergedBeanDefinitionPostProcessor having been applied.
+	 * 是否被MergedBeanDefinitionPostProcessor处理过*/
 	boolean postProcessed = false;
 
-	/** Package-visible field that indicates a before-instantiation post-processor having kicked in. */
-	// 在生成代理的时候会使用，判断是否已经生成代理
+	/** Package-visible field that indicates a before-instantiation post-processor having kicked in.
+	 * 在生成代理的时候会使用，判断是否已经生成代理*/
 	@Nullable
 	volatile Boolean beforeInstantiationResolved;
 
-	// 实际缓存的类型是Constructor、Field、Method类型
+	/**
+	 * 	实际缓存的类型是Constructor、Field、Method类型
+ 	 */
 	@Nullable
 	private Set<Member> externallyManagedConfigMembers;
 
-	//InitializingBean中的init回调函数名——afterPropertiesSet会在这里记录，以便进行生命周期回调
+	/**
+	 * InitializingBean中的init回调函数名——afterPropertiesSet会在这里记录，以便进行生命周期回调
+	 */
 	@Nullable
 	private Set<String> externallyManagedInitMethods;
 
-	//DisposableBean的destroy回调函数名——destroy会在这里记录，以便进行生命周期回调
+	/**
+	 * 	DisposableBean的destroy回调函数名——destroy会在这里记录，以便进行生命周期回调
+	 */
 	@Nullable
 	private Set<String> externallyManagedDestroyMethods;
 
-	//---------------------------------------------------------------------
-	// 构造方法
-	//---------------------------------------------------------------------
+	/* -----------------------------------------------------构造方法----------------------------------------------------- */
 
 	/**
 	 * Create a new RootBeanDefinition, to be configured through its bean
@@ -278,9 +308,9 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 		super(original);
 	}
 
-	//---------------------------------------------------------------------
-	// 实例方法
-	//---------------------------------------------------------------------
+	/* -----------------------------------------------------构造方法----------------------------------------------------- */
+
+	/* -----------------------------------------------------具体方法----------------------------------------------------- */
 
 	// 不存储父bean的名称
 	@Override
@@ -457,9 +487,9 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 		return this.factoryMethodToIntrospect;
 	}
 
-	//---------------------------------------------------------------------
-	// JAVA包中的方法
-	//---------------------------------------------------------------------
+	/* -----------------------------------------------------具体方法----------------------------------------------------- */
+
+	/* -----------------------------------------------------JAVA包中的方法----------------------------------------------------- */
 
 	// java.lang.reflect.Member configMember
 	public void registerExternallyManagedConfigMember(Member configMember) {

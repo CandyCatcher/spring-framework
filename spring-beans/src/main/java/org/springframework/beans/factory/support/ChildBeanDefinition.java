@@ -38,6 +38,17 @@ import org.springframework.util.ObjectUtils;
  * {@link GenericBeanDefinition#setParentName} method. This effectively
  * supersedes the ChildBeanDefinition class for most use cases.
  *
+ * 是一种bean definition，它可以继承它父类的设置，即ChildBeanDefinition对RootBeanDefinition有一定的依赖关系。
+ * ChildBeanDefinition从父类继承构造参数值，属性值并可以重写父类的方法，同时也可以增加新的属性或者方法。
+ * (类同于java类的继承关系)。
+ *
+ * 若指定初始化方法，销毁方法或者静态工厂方法，ChildBeanDefinition将重写相应父类的设置
+ * depends on，autowire mode，dependency check，sigleton，lazy init 一般由子类自行设定。
+ *
+ * 注意：从spring 2.5 开始，提供了一个更好的注册bean definition类GenericBeanDefinition，
+ * 它支持动态定义父依赖，方法是GenericBeanDefinition.setParentName(java.lang.String)，
+ * GenericBeanDefinition可以有效的替代ChildBeanDefinition的绝大分部使用场合。
+ *
  * @author Rod Johnson
  * @author Juergen Hoeller
  * @see GenericBeanDefinition
@@ -49,6 +60,9 @@ public class ChildBeanDefinition extends AbstractBeanDefinition {
 	@Nullable
 	private String parentName;
 
+	/* -----------------------------------------------------构造方法----------------------------------------------------- */
+
+	/* childBeanDefinition不能单独存在。要创建childBeanDefinition，必须要设置parentBeanDefinition，或给定一个BeanDefinition */
 
 	/**
 	 * Create a new ChildBeanDefinition for the given parent, to be
@@ -64,10 +78,13 @@ public class ChildBeanDefinition extends AbstractBeanDefinition {
 		this.parentName = parentName;
 	}
 
+	// TODO 是根据输入自己的构造参数和属性进行设置的吗？
+	// TODO MutablePropertyValues和ConstructorArgumentValues怎么使用的？
+
 	/**
 	 * Create a new ChildBeanDefinition for the given parent.
 	 * @param parentName the name of the parent bean
-	 * @param pvs the additional property values of the child
+	 * @param pvs the additional property values of the child MutablePropertyValues，持有N多个属性的值，用于给Java对象赋值
 	 */
 	public ChildBeanDefinition(String parentName, MutablePropertyValues pvs) {
 		super(null, pvs);
@@ -129,6 +146,7 @@ public class ChildBeanDefinition extends AbstractBeanDefinition {
 		super(original);
 	}
 
+	/* -----------------------------------------------------构造方法----------------------------------------------------- */
 
 	@Override
 	public void setParentName(@Nullable String parentName) {
@@ -141,6 +159,10 @@ public class ChildBeanDefinition extends AbstractBeanDefinition {
 		return this.parentName;
 	}
 
+	/**
+	 * 什么时候调用validate？
+	 * @throws BeanDefinitionValidationException
+	 */
 	@Override
 	public void validate() throws BeanDefinitionValidationException {
 		super.validate();

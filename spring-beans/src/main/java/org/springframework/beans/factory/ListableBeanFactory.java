@@ -49,6 +49,11 @@ import org.springframework.lang.Nullable;
  * and {@code containsBeanDefinition}, the methods in this interface
  * are not designed for frequent invocation. Implementations may be slow.
  *
+ * ListableBeanFactory 是对 BeanFactory 接口的扩展。
+ * 和 BeanFactory 每次获取单个 bean 不同, ListableBeanFactory 可以一次性枚举出符合条件的 bean, return一个数组的形式
+ * 如果这个 BeanFactory 继承了 HierarchicalBeanFactory, ListableBeanFactory 接口面列出的 bean 不会列出祖先 BeanFactory 中的 bean,
+ * 并且会忽略通过其他方式注册的任何单例 bean, 如 ConfigurableBeanFactory 的 registerSingleton 方法, 但 getBeanNamesOfType 和 getBeansOfType 除外
+ *
  * @author Rod Johnson
  * @author Juergen Hoeller
  * @since 16 April 2001
@@ -62,6 +67,7 @@ public interface ListableBeanFactory extends BeanFactory {
 	 * <p>Does not consider any hierarchy this factory may participate in,
 	 * and ignores any singleton beans that have been registered by
 	 * other means than bean definitions.
+	 * 当前容器是否包含指定名称 bean
 	 * @param beanName the name of the bean to look for
 	 * @return if this bean factory contains a bean definition with the given name
 	 * @see #containsBean
@@ -73,6 +79,7 @@ public interface ListableBeanFactory extends BeanFactory {
 	 * <p>Does not consider any hierarchy this factory may participate in,
 	 * and ignores any singleton beans that have been registered by
 	 * other means than bean definitions.
+	 * 当前容器注册的 bean 的数量
 	 * @return the number of beans defined in the factory
 	 */
 	int getBeanDefinitionCount();
@@ -82,6 +89,7 @@ public interface ListableBeanFactory extends BeanFactory {
 	 * <p>Does not consider any hierarchy this factory may participate in,
 	 * and ignores any singleton beans that have been registered by
 	 * other means than bean definitions.
+	 * 返回容器中注册的全部 bean 的名称
 	 * @return the names of all beans defined in this factory,
 	 * or an empty array if none defined
 	 */
@@ -94,6 +102,7 @@ public interface ListableBeanFactory extends BeanFactory {
 	 * @param allowEagerInit whether stream-based access may initialize <i>lazy-init
 	 * singletons</i> and <i>objects created by FactoryBeans</i> (or by factory methods
 	 * with a "factory-bean" reference) for the type check
+	 * 用于获取指定bean的提供者，可以看到它返回的是一个ObjectProvider，其父级接口是ObjectFactory
 	 * @return a corresponding provider handle
 	 * @since 5.3
 	 * @see #getBeanProvider(ResolvableType, boolean)
@@ -143,6 +152,7 @@ public interface ListableBeanFactory extends BeanFactory {
 	 * result will be the same as for {@code getBeanNamesForType(type, true, true)}.
 	 * <p>Bean names returned by this method should always return bean names <i>in the
 	 * order of definition</i> in the backend configuration, as far as possible.
+	 * 获取指定类型 (包括其子类) bean 的名称
 	 * @param type the generically typed class or interface to match
 	 * @return the names of beans (or objects created by FactoryBeans) matching
 	 * the given object type (including subclasses), or an empty array if none
@@ -171,14 +181,17 @@ public interface ListableBeanFactory extends BeanFactory {
 	 * by other means than bean definitions.
 	 * <p>Bean names returned by this method should always return bean names <i>in the
 	 * order of definition</i> in the backend configuration, as far as possible.
+	 *
+	 *
 	 * @param type the generically typed class or interface to match
 	 * @param includeNonSingletons whether to include prototype or scoped beans too
-	 * or just singletons (also applies to FactoryBeans)
+	 * or just singletons (also applies to FactoryBeans) 是否只要单例(包括BeanFactory),还是原型或其他作用域的bean一样包括
 	 * @param allowEagerInit whether to initialize <i>lazy-init singletons</i> and
 	 * <i>objects created by FactoryBeans</i> (or by factory methods with a
 	 * "factory-bean" reference) for the type check. Note that FactoryBeans need to be
 	 * eagerly initialized to determine their type: So be aware that passing in "true"
 	 * for this flag will initialize FactoryBeans and "factory-bean" references.
+	 * 是否初始化懒加载的单例,FactoryBean初始化的类和工厂方法初始化的类.就是说执行这个方法会执行对应的初始化
 	 * @return the names of beans (or objects created by FactoryBeans) matching
 	 * the given object type (including subclasses), or an empty array if none
 	 * @since 5.2
@@ -267,6 +280,8 @@ public interface ListableBeanFactory extends BeanFactory {
 	 * <p>The Map returned by this method should always return bean names and
 	 * corresponding bean instances <i>in the order of definition</i> in the
 	 * backend configuration, as far as possible.
+	 * 获取指定类型的 bean, 符合条件的 bean 存放在一个 map 中
+	 * 这个 map 的 key 值为 bean 的名称, value 为对应的实例
 	 * @param type the class or interface to match, or {@code null} for all concrete beans
 	 * @return a Map with the matching beans, containing the bean names as
 	 * keys and the corresponding bean instances as values
@@ -318,6 +333,7 @@ public interface ListableBeanFactory extends BeanFactory {
 	 * type, without creating corresponding bean instances yet.
 	 * <p>Note that this method considers objects created by FactoryBeans, which means
 	 * that FactoryBeans will get initialized in order to determine their object type.
+	 * 获取使用了指定注解的 bean 的名称
 	 * @param annotationType the type of annotation to look for
 	 * (at class, interface or factory method level of the specified bean)
 	 * @return the names of all matching beans
@@ -331,6 +347,7 @@ public interface ListableBeanFactory extends BeanFactory {
 	 * returning a Map of bean names with corresponding bean instances.
 	 * <p>Note that this method considers objects created by FactoryBeans, which means
 	 * that FactoryBeans will get initialized in order to determine their object type.
+	 * 获取使用了指定注解的 bean 的名称，这里返回的是key为bean name，value为bean实例的map
 	 * @param annotationType the type of annotation to look for
 	 * (at class, interface or factory method level of the specified bean)
 	 * @return a Map with the matching beans, containing the bean names as
@@ -345,6 +362,7 @@ public interface ListableBeanFactory extends BeanFactory {
 	 * Find an {@link Annotation} of {@code annotationType} on the specified bean,
 	 * traversing its interfaces and super classes if no annotation can be found on
 	 * the given class itself, as well as checking the bean's factory method (if any).
+	 * 或者指定 bean 的注解信息
 	 * @param beanName the name of the bean to look for annotations on
 	 * @param annotationType the type of annotation to look for
 	 * (at class, interface or factory method level of the specified bean)

@@ -53,6 +53,8 @@ import org.springframework.util.StringUtils;
  * 还提供了beanDefinition的各个属性的默认值
  *
  * 现在的问题是谁调用的AbstractBeanDefinition？
+ * AbstractBeanDefinition没有抽象方法，那它的作用是什么？
+ * 在编写代码的时候，有多个子类，并且子类之间有相同的部分，可以考虑将相同的部分放到抽象类中，复用相同的功能
  *
  * @author Rod Johnson
  * @author Juergen Hoeller
@@ -243,6 +245,7 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	/**
 	 * Create a new AbstractBeanDefinition with the given
 	 * constructor argument values and property values.
+	 * 子类调用这个方法，给定构造参数和属性值创建BeanDefinition
 	 */
 	protected AbstractBeanDefinition(@Nullable ConstructorArgumentValues cargs, @Nullable MutablePropertyValues pvs) {
 		this.constructorArgumentValues = cargs;
@@ -524,9 +527,7 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 		return (hasBeanClass() ? ResolvableType.forClass(getBeanClass()) : ResolvableType.NONE);
 	}
 
-	//---------------------------------------------------------------------
-	// 对BeanDefinition方法的实现
-	//---------------------------------------------------------------------
+	/* -----------------------------------------------------对BeanDefinition方法的实现----------------------------------------------------- */
 
 	/**
 	 * Set the name of the target scope for the bean.
