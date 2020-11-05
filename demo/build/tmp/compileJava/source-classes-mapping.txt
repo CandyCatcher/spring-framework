@@ -12,5 +12,9 @@ top/candysky/ClassDemo.java
  top.candysky.ClassDemo
 top/candysky/InterfaceDemo.java
  top.candysky.InterfaceDemo
+top/candysky/entity/factory/UserFactoryBean.java
+ top.candysky.entity.factory.UserFactoryBean
+top/candysky/entity/User.java
+ top.candysky.entity.User
 top/candysky/Entrance.java
  top.candysky.Entrance

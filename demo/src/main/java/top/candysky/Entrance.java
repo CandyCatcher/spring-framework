@@ -6,6 +6,8 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.support.FileSystemXmlApplicationContext;
 import top.candysky.controller.WelcomeController;
+import top.candysky.entity.User;
+import top.candysky.entity.factory.UserFactoryBean;
 import top.candysky.service.WelcomeService;
 
 
@@ -19,22 +21,30 @@ import top.candysky.service.WelcomeService;
 public class Entrance {
 	public static void main(String[] args) {
 		//System.out.println("hello world");
-		//String xmlPath = "D:\\spring-framework\\demo\\src\\main\\resources\\spring\\spring-config.xml";
-		//FileSystemXmlApplicationContext context = new FileSystemXmlApplicationContext(xmlPath);
+		String xmlPath = "D:\\spring-framework\\demo\\src\\main\\resources\\spring\\spring-config.xml";
+		FileSystemXmlApplicationContext context = new FileSystemXmlApplicationContext(xmlPath);
 		//WelcomeService welcomeService = (WelcomeService) context.getBean("welcomeService");
-		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(Entrance.class);
-		BeanDefinition welcomeController = context.getBeanDefinition("welcomeController");
-		System.out.println(welcomeController.getDestroyMethodName());
-		System.out.println(welcomeController.toString());
-		Object classDemo = new ClassDemo();
+		//AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(Entrance.class);
+		//BeanDefinition welcomeController = context.getBeanDefinition("welcomeController");
+		//System.out.println(welcomeController.getDestroyMethodName());
+		//System.out.println(welcomeController.toString());
+
+		User userBean = (User) context.getBean("userFactoryBean");
+		// 这样得到的是userFactoryBean调用getObjective得到的user实例
+		System.out.println(userBean);
+
+		UserFactoryBean userFactoryBean = (UserFactoryBean) context.getBean("&userFactoryBean");
+		System.out.println(userFactoryBean);
+
+		//Object classDemo = new ClassDemo();
 		// TODO class类通过classLoader创建
-		ClassLoader systemClassLoader = ClassLoader.getSystemClassLoader();
-		Class<? extends ClassLoader> aClass = systemClassLoader.getClass();
-		if (classDemo.getClass() instanceof  Class) {
-			System.out.println("1");
-		} else {
-			System.out.println("0");
-		}
+		//ClassLoader systemClassLoader = ClassLoader.getSystemClassLoader();
+		//Class<? extends ClassLoader> aClass = systemClassLoader.getClass();
+		//if (classDemo.getClass() instanceof  Class) {
+		//	System.out.println("1");
+		//} else {
+		//	System.out.println("0");
+		//}
 
 
 
