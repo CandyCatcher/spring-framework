@@ -600,6 +600,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 * @see org.springframework.core.io.support.PathMatchingResourcePatternResolver
 	 */
 	protected ResourcePatternResolver getResourcePatternResolver() {
+		//这是因为PathMatchingResourcePatternResolver有一个成员变量ResourceLoader，同时还有一个带参的构造函数，参数是ResourceLoader
 		return new PathMatchingResourcePatternResolver(this);
 	}
 

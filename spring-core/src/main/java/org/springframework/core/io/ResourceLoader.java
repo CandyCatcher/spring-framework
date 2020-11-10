@@ -74,6 +74,9 @@ public interface ResourceLoader {
 	 * @see Resource#exists()
 	 * @see Resource#getInputStream()
 	 */
+	/**
+	 * 每次只能根据location返回Resource实例，不支持ant风格路径解析，需要包一层方法
+	 */
 	Resource getResource(String location);
 
 	/**

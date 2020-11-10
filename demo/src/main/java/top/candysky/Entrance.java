@@ -29,12 +29,12 @@ public class Entrance {
 		//System.out.println(welcomeController.getDestroyMethodName());
 		//System.out.println(welcomeController.toString());
 
-		User userBean = (User) context.getBean("userFactoryBean");
+//		User userBean = (User) context.getBean("userFactoryBean");
 		// 这样得到的是userFactoryBean调用getObjective得到的user实例
-		System.out.println(userBean);
+//		System.out.println(userBean);
 
-		UserFactoryBean userFactoryBean = (UserFactoryBean) context.getBean("&userFactoryBean");
-		System.out.println(userFactoryBean);
+//		UserFactoryBean userFactoryBean = (UserFactoryBean) context.getBean("&userFactoryBean");
+//		System.out.println(userFactoryBean);
 
 		//Object classDemo = new ClassDemo();
 		// TODO class类通过classLoader创建
@@ -53,8 +53,8 @@ public class Entrance {
 		//
 		//	System.out.println(beanDefinitionName);
 		//}
-		//WelcomeService welcomeService = (WelcomeService) context.getBean("welcomeServiceImpl");
-		//welcomeService.sayHello("success");
+		WelcomeService welcomeService = (WelcomeService) context.getBean("welcomeServiceImpl");
+		welcomeService.sayHello("success");
 		//WelcomeController welcomeController = (WelcomeController) context.getBean("welcomeController");
 		//welcomeController.handleRequest();
 

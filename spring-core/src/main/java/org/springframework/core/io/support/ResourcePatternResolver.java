@@ -58,6 +58,13 @@ import org.springframework.core.io.ResourceLoader;
  *
  * Spring提供ResourcePatternResolver接口来加载多个Resource，
  * 该接口继承了ResourceLoader并添加了“Resource[] getResources(String locationPattern)”用来加载多个Resource
+ *
+ * 需要注意的是，ApplicationContext继承了这个接口，所以任何一个ApplicationContext的实现类都可以去解析Resource
+ * 同时，还有这么一个方法：
+ * protected ResourcePatternResolver getResourcePatternResolver() {
+ * 		return new PathMatchingResourcePatternResolver(this);
+ * }
+ * 这也是为什么高级容器允许统一资源的加载，是因为委托给了PathMatchingResourcePatternResolver
  */
 public interface ResourcePatternResolver extends ResourceLoader {
 
@@ -79,6 +86,7 @@ public interface ResourcePatternResolver extends ResourceLoader {
 	 * @return the corresponding Resource objects
 	 * @throws IOException in case of I/O errors
 	 * 将给定的locationPattern解析为Resource对象
+	 * ResourceLoader不能按ant解析地址，ResourcePatternResolver便增加了这一功能
 	 */
 	Resource[] getResources(String locationPattern) throws IOException;
 

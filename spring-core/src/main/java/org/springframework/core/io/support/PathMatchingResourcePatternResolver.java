@@ -211,7 +211,7 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
 		}
 	}
 
-
+	// 在这里引入ResourceLoader
 	private final ResourceLoader resourceLoader;
 
 	private PathMatcher pathMatcher = new AntPathMatcher();
@@ -221,6 +221,7 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
 	 * Create a new PathMatchingResourcePatternResolver with a DefaultResourceLoader.
 	 * <p>ClassLoader access will happen via the thread context class loader.
 	 * @see org.springframework.core.io.DefaultResourceLoader
+	 * 然后使用ResourceLoader的实现类去操作
 	 */
 	public PathMatchingResourcePatternResolver() {
 		this.resourceLoader = new DefaultResourceLoader();
@@ -286,7 +287,7 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
 	}
 
 	/**
-	 *
+	 * 在这里就是调用的
 	 * @param locationPattern the location pattern to resolve
 	 * @return
 	 * @throws IOException
@@ -298,6 +299,7 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
 			// a class path resource (multiple resources for same name possible)
 			if (getPathMatcher().isPattern(locationPattern.substring(CLASSPATH_ALL_URL_PREFIX.length()))) {
 				// a class path resource pattern
+				// ant风格的路径匹配模式
 				return findPathMatchingResources(locationPattern);
 			}
 			else {
@@ -316,6 +318,7 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
 			}
 			else {
 				// a single resource with the given name
+                // 当匹配到资源Location时，通过ResourceLoader进行解析
 				return new Resource[] {getResourceLoader().getResource(locationPattern)};
 			}
 		}
