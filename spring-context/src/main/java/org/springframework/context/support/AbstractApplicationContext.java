@@ -87,6 +87,10 @@ import org.springframework.util.ObjectUtils;
 import org.springframework.util.ReflectionUtils;
 
 /**
+ * 高级容器
+ *
+ * 模版方法设计模式
+ * 模版方法、具体方法、钩子方法：子类根据实际情况实现
  * Abstract implementation of the {@link org.springframework.context.ApplicationContext}
  * interface. Doesn't mandate the type of storage used for configuration; simply
  * implements common context functionality. Uses the Template Method design pattern,
@@ -688,6 +692,15 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 * 由于这是一种启动方法，如果失败，应该销毁已经创建的单例，以避免悬空资源。
 	 *
 	 * 换句话说，在调用该方法之后，要么全部实例化，要么完全不实例化。
+	 *
+	 * refresh方法可以看作是IoC容器的启动方法
+	 * 主要的功能：
+	 * 1.容器的初始化、配置解析
+	 * 2.BeanFactoryPostProcessor和BeanPostProcessor的注册和激活
+	 * 3.国际化配置
+	 * 4. Web容器的构造等等
+	 *
+	 * refresh()方法就使用了模版设计模式
 	 * @throws BeansException 如果bean工厂无法初始化，则抛出 BeansException 异常
 	 * @throws IllegalStateException 如果已经初始化且不支持多次刷新，则会抛出 IllegalStateException 异常
 	 */

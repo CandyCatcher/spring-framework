@@ -39,6 +39,16 @@ import org.springframework.util.ResourceUtils;
  * @see org.springframework.context.ApplicationContext
  * @see org.springframework.context.ResourceLoaderAware
  */
+
+/**
+ * Spring框架为了更方便的获取资源，尽量弱化程序员对各个Resource接口的实现类的感知，定义了另一个ResourceLoader接口
+ *
+ * ResourceLoader接口有一个特别重要的方法：getResource(String location)，返回Resource实例
+ * 所有ApplicationContext实例都实现了这个方法
+ *
+ * 因此程序员在使用Spring容器时，可以不去过于计较底层Resource的实现，也不需要自己创建Resource实现类，
+ * 而是直接使用applicationContext.getResource()，获取到bean容器本身的Resource，进而取到相关的资源信息。
+ */
 public interface ResourceLoader {
 
 	/** Pseudo URL prefix for loading from the class path: "classpath:". */

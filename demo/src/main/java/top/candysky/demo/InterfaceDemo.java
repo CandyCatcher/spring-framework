@@ -1,4 +1,4 @@
-package top.candysky;
+package top.candysky.demo;
 
 public interface InterfaceDemo {
 

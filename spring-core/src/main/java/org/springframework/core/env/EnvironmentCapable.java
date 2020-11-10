@@ -24,6 +24,10 @@ package org.springframework.core.env;
  * instances that may or may not actually be ApplicationContext instances in order to interact
  * with the environment if indeed it is available.
  *
+ * getEnvironment()是接口定义的唯一方法，就是获取与当前组件相关联的Environment环境对象。
+ * ApplicationContext接口继承自这个接口，也就是说所有应用上下文都是具有环境的，
+ * 当使用ApplicationContext实现类时调用getEnvironment就可以获取环境信息了。
+ *
  * <p>As mentioned, {@link org.springframework.context.ApplicationContext ApplicationContext}
  * extends EnvironmentCapable, and thus exposes a {@link #getEnvironment()} method; however,
  * {@link org.springframework.context.ConfigurableApplicationContext ConfigurableApplicationContext}

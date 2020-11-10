@@ -45,6 +45,10 @@ import org.springframework.util.ResourceUtils;
  * @author Sam Brannen
  * @since 28.12.2003
  */
+
+/**
+ * AbstractResource提供了接口Resource方法的默认实现
+ */
 public abstract class AbstractResource implements Resource {
 
 	/**
@@ -108,6 +112,7 @@ public abstract class AbstractResource implements Resource {
 	/**
 	 * This implementation throws a FileNotFoundException, assuming
 	 * that the resource cannot be resolved to a URL.
+	 * 默认认为资源不是URL路径，子类覆写此方法
 	 */
 	@Override
 	public URL getURL() throws IOException {
@@ -122,6 +127,7 @@ public abstract class AbstractResource implements Resource {
 	public URI getURI() throws IOException {
 		URL url = getURL();
 		try {
+			// 通过getURL方法的返回值来进行转换
 			return ResourceUtils.toURI(url);
 		}
 		catch (URISyntaxException ex) {
@@ -132,6 +138,7 @@ public abstract class AbstractResource implements Resource {
 	/**
 	 * This implementation throws a FileNotFoundException, assuming
 	 * that the resource cannot be resolved to an absolute file path.
+	 * 默认认为资源无法表示为File对象，子类可覆写
 	 */
 	@Override
 	public File getFile() throws IOException {
@@ -161,6 +168,7 @@ public abstract class AbstractResource implements Resource {
 	public long contentLength() throws IOException {
 		InputStream is = getInputStream();
 		try {
+			// 默认实现为读取inputStream中的所有数据来获取长度
 			long size = 0;
 			byte[] buf = new byte[256];
 			int read;
@@ -205,6 +213,8 @@ public abstract class AbstractResource implements Resource {
 	 * @throws FileNotFoundException if the resource cannot be resolved as
 	 * an absolute file path, i.e. is not available in a file system
 	 * @throws IOException in case of general resolution/reading failures
+	 * 交给子类实现
+	 * 子类没有实现则返回file
 	 */
 	protected File getFileForLastModifiedCheck() throws IOException {
 		return getFile();
@@ -213,7 +223,8 @@ public abstract class AbstractResource implements Resource {
 	/**
 	 * This implementation throws a FileNotFoundException, assuming
 	 * that relative resources cannot be created for this resource.
-	 */
+	 * 默认不能创建资源的相对路径，交由子类实现
+	 * */
 	@Override
 	public Resource createRelative(String relativePath) throws IOException {
 		throw new FileNotFoundException("Cannot create a relative resource for " + getDescription());

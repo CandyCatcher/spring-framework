@@ -49,6 +49,25 @@ import org.springframework.web.util.WebUtils;
  * @see javax.servlet.ServletContext#getResource
  * @see javax.servlet.ServletContext#getRealPath
  */
+
+/**
+ * 这是ServletContext资源的Resource实现，它解释相关Web应用程序根目录中的相对路径。
+ *
+ * Spring提供了ServletContextResource类来访问Web Context下相对路径下的资源，
+ * ServletContextResource构造器接受一个代表资源位置的字符串参数，该资源位置是相对于Web应用根路径的位置。
+ *
+ * 使用ServletContextResource访问的资源， 也可通过文件IO访问或URL访问。
+ * 通过java.io.File访问要求资源被解压缩，而且在本地文件系统中；
+ * 但使用ServletContextResource进行访问时则无须关注资源是否被解压缩出来，或则直接存放在JAR文件中，总可通过Servlet容器访问。
+ *
+ * 当程序试图直接通过File来访问Web Context下相对路径下的资源时，应该先使用ServletContext的getRealPath()方法来取得资源绝对路径，再以该绝对路径来创建File对象。
+ *
+ * 从Web Context下的WEB-INF路径下读取book.xml资源：
+ * ServletContextResource src=new ServletContextResource(application,"WEB-INF/book.xml")
+ *
+ * 在默认情况下，JSP不能直接访问WEB-INF路径下的任何资源，所以该应用中的JSP页面需要使用ServletContextResource来访问该资源。
+ */
+
 public class ServletContextResource extends AbstractFileResolvingResource implements ContextResource {
 
 	private final ServletContext servletContext;

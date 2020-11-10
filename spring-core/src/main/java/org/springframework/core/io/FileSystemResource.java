@@ -55,6 +55,17 @@ import org.springframework.util.StringUtils;
  * @see java.io.File
  * @see java.nio.file.Files
  */
+
+/**
+ * FileSystemResource可以从文件系统的指定路径中找到给定的spring bean配置文件。 在这里，我们可以传递绝对路径或相对路径
+ * FileSystemResourceres = new FileSystemResource("src/com/example/cfgs/applicationContext.xml");
+ *
+ * 在ClassPathResource中spring会在ClassPath中自动搜寻配置文件，所以要把ClassPathResource 文件放在ClassPath下。
+ * 如果将spring-config.xml保存在了src文件夹下的话，只需给出配置文件的名称即可，因为src文件夹是默认。
+ * ClassPathResource res = new ClassPathResource("applicationContext.xml");
+ *
+ * 是WritableResource的具体实现
+ */
 public class FileSystemResource extends AbstractResource implements WritableResource {
 
 	private final String path;

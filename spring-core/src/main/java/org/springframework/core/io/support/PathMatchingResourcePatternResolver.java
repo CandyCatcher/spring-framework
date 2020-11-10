@@ -180,6 +180,17 @@ import org.springframework.util.StringUtils;
  * @see org.springframework.core.io.ResourceLoader#getResource(String)
  * @see ClassLoader#getResources(String)
  */
+
+/**
+ * PathMatchingResourcePatternResolver类实现了ResourcePatternResolver接口，
+ * 它包含了对ResourceLoader接口的引用，在对继承自ResourceLoader接口的方法的实现会代理给该引用，
+ * 同时在getResources()方法实现中，当找到一个匹配的资源location时，可以使用该引用解析成Resource实例。
+ * 默认使用DefaultResourceLoader类，用户可以使用构造函数传入自定义的ResourceLoader。
+ *
+ * PathMatchingResourcePatternResolver还包含了一个对PathMatcher接口的引用，该接口基于路径字符串实现匹配处理，
+ * 如判断一个路径字符串是否包含通配符（’*’、’?’），判断给定的path是否匹配给定的pattern等。
+ * Spring提供了AntPathMatcher对PathMatcher的默认实现，表达该PathMatcher是采用Ant风格的实现。
+ */
 public class PathMatchingResourcePatternResolver implements ResourcePatternResolver {
 
 	private static final Log logger = LogFactory.getLog(PathMatchingResourcePatternResolver.class);
@@ -274,6 +285,12 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
 		return getResourceLoader().getResource(location);
 	}
 
+	/**
+	 *
+	 * @param locationPattern the location pattern to resolve
+	 * @return
+	 * @throws IOException
+	 */
 	@Override
 	public Resource[] getResources(String locationPattern) throws IOException {
 		Assert.notNull(locationPattern, "Location pattern must not be null");

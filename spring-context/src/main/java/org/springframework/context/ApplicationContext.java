@@ -55,6 +55,22 @@ import org.springframework.lang.Nullable;
  * @see org.springframework.beans.factory.BeanFactory
  * @see org.springframework.core.io.ResourceLoader
  */
+
+/**
+ * ApplicationContext常用容器
+ *
+ * 传统的基于Xml配置的容器
+ * FileSystemXmlApplicationContext：从文件系统中加载
+ * ClassPathXmlApplicationContext：从classPath加载
+ * XmlWebApplicationContext：用于Web应用程序的容器
+ *
+ * 目前比较流行的容器
+ * AnnotationConfigServletWebServerApplicationContext
+ * AnnotationConfigReactiveWebServerApplicationContext
+ * AnnotationConfigApplicationContext
+ *
+ * Application全是get方法，所以是readOnly的，只提供读取操作的
+ */
 public interface ApplicationContext extends EnvironmentCapable, ListableBeanFactory, HierarchicalBeanFactory,
 		MessageSource, ApplicationEventPublisher, ResourcePatternResolver {
 

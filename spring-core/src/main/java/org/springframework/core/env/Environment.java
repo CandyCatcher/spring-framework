@@ -68,6 +68,11 @@ package org.springframework.core.env;
  * @see org.springframework.context.ConfigurableApplicationContext#setEnvironment
  * @see org.springframework.context.support.AbstractApplicationContext#createEnvironment
  */
+
+/**
+ * 获取启动参数
+ * 通过Environment可以获取到xml文件中的设置
+ */
 public interface Environment extends PropertyResolver {
 
 	/**

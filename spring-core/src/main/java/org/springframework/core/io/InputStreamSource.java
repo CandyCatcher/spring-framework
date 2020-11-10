@@ -38,6 +38,10 @@ import java.io.InputStream;
  * @see InputStreamResource
  * @see ByteArrayResource
  */
+
+/**
+ * 它的每个实现类实现了对各种资源的不同访问策略
+ */
 public interface InputStreamSource {
 
 	/**
@@ -51,6 +55,7 @@ public interface InputStreamSource {
 	 * @throws java.io.FileNotFoundException if the underlying resource doesn't exist
 	 * @throws IOException if the content stream could not be opened
 	 */
+	// 返回一个资源流
 	InputStream getInputStream() throws IOException;
 
 }

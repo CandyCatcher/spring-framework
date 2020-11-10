@@ -42,6 +42,10 @@ import org.springframework.util.ObjectUtils;
  * @see java.io.Reader
  * @see java.nio.charset.Charset
  */
+
+/**
+ * 给资源设置编码属性
+ */
 public class EncodedResource implements InputStreamSource {
 
 	private final Resource resource;
@@ -134,6 +138,7 @@ public class EncodedResource implements InputStreamSource {
 	 * @throws IOException if opening the Reader failed
 	 * @see #requiresReader()
 	 * @see #getInputStream()
+	 * 具体实现在这里
 	 */
 	public Reader getReader() throws IOException {
 		if (this.charset != null) {

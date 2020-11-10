@@ -49,6 +49,15 @@ import org.springframework.lang.Nullable;
  * @see ByteArrayResource
  * @see InputStreamResource
  */
+
+/**
+ * 在java中，资源被抽象成URL
+ * spring将资源抽象成resource
+ *
+ * Resource接口实现了spring框架对外部资源的引用和操作
+ * 作为所有资源的统一抽象，Resource 定义了一些通用的方法，由子类 AbstractResource 提供统一的默认实现。
+ */
+
 public interface Resource extends InputStreamSource {
 
 	/**

@@ -41,6 +41,12 @@ import org.springframework.util.StringUtils;
  * @see ClassLoader#getResourceAsStream(String)
  * @see Class#getResourceAsStream(String)
  */
+
+/**
+ * ClassPathResource 用来访问类加载路径下的资源，
+ * 相对于其他的 Resource 实现类，其主要优势是方便访问类加载路径里的资源，
+ * 尤其对于 Web 应用，ClassPathResource 可自动搜索位于 WEB-INF/classes 下的资源文件，无须使用绝对路径访问。
+ */
 public class ClassPathResource extends AbstractFileResolvingResource {
 
 	private final String path;
