@@ -31,6 +31,10 @@ package org.springframework.beans.factory;
  * @author Chris Beams
  * @author Juergen Hoeller
  * @since 3.1
+ *
+ * 某些情况下需要在bean中对容器进行操作的
+ * 那么需要在bean中设置对容器的感知了
+ * 这便是Aware接口的作用
  */
 public interface Aware {
 

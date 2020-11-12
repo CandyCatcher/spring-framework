@@ -30,6 +30,7 @@ import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
  * @since 3.0.1
  * @see org.springframework.context.annotation.ConfigurationClassPostProcessor
  *
+ * postprocessor就是后置处理器
  * 允许正常的BeanFactoryPostProcessor检测开始之前注册更多的自定义BeanDefinition
  */
 public interface BeanDefinitionRegistryPostProcessor extends BeanFactoryPostProcessor {
@@ -41,6 +42,8 @@ public interface BeanDefinitionRegistryPostProcessor extends BeanFactoryPostProc
 	 * bean definitions before the next post-processing phase kicks in.
 	 * @param registry the bean definition registry used by the application context
 	 * @throws org.springframework.beans.BeansException in case of errors
+	 *
+	 * 在实现的方法里要创建BeanDefinition，将BeanDefinition注册到registry中
 	 */
 	void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry registry) throws BeansException;
 
