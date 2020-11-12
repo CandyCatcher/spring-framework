@@ -1077,6 +1077,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 	//---------------------------------------------------------------------
 
 	/**
+	 * BeanDefinitionReaderUtils执行registerBeanDefinition这个方法，跳到这里来
 	 * 注册BeanDefinition
 	 * 简单的说，就是把beanName和beanDefinition放入beanDefinitionMap中
 	 * @param beanName the name of the bean instance to register
@@ -1139,11 +1140,14 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 							"] with [" + beanDefinition + "]");
 				}
 			}
-			// 添加至 BeanDefinition 集合，并覆盖原 BeanDefinition
+			// 添加至 BeanDefinition 集合，并覆盖原 BeanDefinition。。 更新
 			this.beanDefinitionMap.put(beanName, beanDefinition);
 		}
 		// Map 中无对应的 BeanDefinition，则直接注册
 		else {
+			// 判断容器是否已经开始创建Bean实例了。如果已经开始，那么说明先前已经有BeanDefinition注册了
+			// 那么这里的操作是一个增量操作，将新的BeanDefinition实例注册金立
+			// bean实例是依据BeanDefinition创建的
 			if (hasBeanCreationStarted()) {
 				// Cannot modify startup-time collection elements anymore (for stable iteration)
 				synchronized (this.beanDefinitionMap) {
@@ -1152,6 +1156,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 					updatedDefinitions.addAll(this.beanDefinitionNames);
 					updatedDefinitions.add(beanName);
 					this.beanDefinitionNames = updatedDefinitions;
+					// 最后对单例BeanName列表进行更新
 					removeManualSingletonName(beanName);
 				}
 			}
@@ -1163,8 +1168,11 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 				this.beanDefinitionNames.add(beanName);
 				removeManualSingletonName(beanName);
 			}
+			// 将注册期间被冻结的BeanDefinitionName列表清除掉
+			// frozenBeanDefinitionNames是Spring的内存优化操作
 			this.frozenBeanDefinitionNames = null;
 		}
+		// 检查同名的BeanDefinition是否已经有在IoC容器中注册
 		// 如果当前注册的 BeanDefinition 已在 beanDefinitionMap 中存在，或者其实例已在存储单例 Bean 的 Map 中存在
 		if (existingDefinition != null || containsSingleton(beanName)) {
 			// 重置 BeanDefinition，主要做一些清理工作
@@ -1228,6 +1236,8 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 	protected void resetBeanDefinition(String beanName) {
 		// Remove the merged bean definition for the given bean, if already created.
 		// 删除beanName的mergedBeanDefinitions缓存（如果有的话）
+		// 如果有一个bean的parent属性是有值的，那么loadBeanDefinition接收的时候，将自身的属性和parent的属性结合起来
+		// 由于这是对于同一个beanName注册新的BeanDefinition实例，因此需要删除掉原先的
 		clearMergedBeanDefinition(beanName);
 
 		// Remove corresponding bean from singleton cache, if any. Shouldn't usually
@@ -1238,17 +1248,18 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 
 		// Notify all post-processors that the specified bean definition has been reset.
 		for (MergedBeanDefinitionPostProcessor processor : getBeanPostProcessorCache().mergedDefinition) {
+			// 后置的清除操作
 			processor.resetBeanDefinition(beanName);
 		}
 
 		// Reset all bean definitions that have the given bean as parent (recursively).
-		// 重置beanName的所有子BeanDefinition（递归）
+		// 重置beanName的每一个BeanDefinition实例（递归）
 		for (String bdName : this.beanDefinitionNames) {
 			// 如果beanName不等于bdName
 			if (!beanName.equals(bdName)) {
 				BeanDefinition bd = this.beanDefinitionMap.get(bdName);
 				// Ensure bd is non-null due to potential concurrent modification of beanDefinitionMap.
-				// 当前遍历的BeanDefinition的parentName为beanName，则递归调用resetBeanDefinition进行重置
+				// 当前遍历的BeanDefinition的parentName为当前的beanName，则也需要对该beanName对应的BeanDefinition递归调用resetBeanDefinition进行重置
 				// 也就是说beanName的子BeanDefinition也要重置
 				if (bd != null && beanName.equals(bd.getParentName())) {
 					resetBeanDefinition(bdName);
@@ -1325,7 +1336,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 			// Cannot modify startup-time collection elements anymore (for stable iteration)
 			// 注册过程需要保证数据的一致性，所有需要加锁同步
 			synchronized (this.beanDefinitionMap) {
-				// 根据给定的 beanName 判断  beanDefinitionMap 中是否存在，如果存在直接跳过
+				// 根据给定的 beanName 判断manualSingletonNames这个单例Bean名字列表中是否存在对应的beanName，如果存在直接跳过
 				if (condition.test(this.manualSingletonNames)) {
 					//TODO manualSingletonNames是？？？
 					Set<String> updatedSingletons = new LinkedHashSet<>(this.manualSingletonNames);

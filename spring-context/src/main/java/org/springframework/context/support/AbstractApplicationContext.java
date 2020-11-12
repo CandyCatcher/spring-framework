@@ -868,12 +868,13 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 
 	/**
 	 * Tell the subclass to refresh the internal bean factory.
-	 * 通知此上下文的子类去加载或刷新其内在的bean工厂
 	 * @return the fresh BeanFactory instance
 	 * @see #refreshBeanFactory()
 	 * @see #getBeanFactory()
+	 * 通知此上下文的子类去加载或刷新其内在的bean工厂
 	 */
 	protected ConfigurableListableBeanFactory obtainFreshBeanFactory() {
+		// TODO 调用了子类的方法？
 		refreshBeanFactory();
 		return getBeanFactory();
 	}

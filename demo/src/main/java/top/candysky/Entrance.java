@@ -23,7 +23,7 @@ public class Entrance {
 		//System.out.println("hello world");
 		String xmlPath = "D:\\spring-framework\\demo\\src\\main\\resources\\spring\\spring-config.xml";
 		FileSystemXmlApplicationContext context = new FileSystemXmlApplicationContext(xmlPath);
-		//WelcomeService welcomeService = (WelcomeService) context.getBean("welcomeService");
+		WelcomeService welcomeService = (WelcomeService) context.getBean("welcomeService");
 		//AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(Entrance.class);
 		//BeanDefinition welcomeController = context.getBeanDefinition("welcomeController");
 		//System.out.println(welcomeController.getDestroyMethodName());
@@ -53,7 +53,7 @@ public class Entrance {
 		//
 		//	System.out.println(beanDefinitionName);
 		//}
-		WelcomeService welcomeService = (WelcomeService) context.getBean("welcomeServiceImpl");
+		//WelcomeService welcomeService = (WelcomeService) context.getBean("welcomeServiceImpl");
 		welcomeService.sayHello("success");
 		//WelcomeController welcomeController = (WelcomeController) context.getBean("welcomeController");
 		//welcomeController.handleRequest();

@@ -305,8 +305,12 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 	 * @return the number of bean definitions found
 	 * @throws BeanDefinitionStoreException in case of loading or parsing errors
 	 */
+	// 指定了location加载？
+	// 直接跳到了这里，说明是调用了这个方法
+	// 在这里调用了父类AbstractBeanDefinitionReader的loadBeanDefinition方法
 	@Override
 	public int loadBeanDefinitions(Resource resource) throws BeanDefinitionStoreException {
+		// 给Resource包装上EncodeResource，制定编码规则
 		return loadBeanDefinitions(new EncodedResource(resource));
 	}
 
@@ -314,27 +318,39 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 	 * Load bean definitions from the specified XML file.
 	 * @param encodedResource the resource descriptor for the XML file,
 	 * allowing to specify an encoding to use for parsing the file
-	 * @return the number of bean definitions found
+	 * @return the number of bean definitions found 返回的是加载的BeanDefinition的数量
 	 * @throws BeanDefinitionStoreException in case of loading or parsing errors
 	 */
+	// 这个是加载逻辑真正的执行者
 	public int loadBeanDefinitions(EncodedResource encodedResource) throws BeanDefinitionStoreException {
 		Assert.notNull(encodedResource, "EncodedResource must not be null");
 		if (logger.isTraceEnabled()) {
 			logger.trace("Loading XML bean definitions from " + encodedResource);
 		}
 
+		//从本地线程变量中获取当前所加载的资源
+		//这里是使用了ThreadLocal
+		// TODO ThreadLocal了解一下 只能当前线程访问ThreadLocalMap
 		Set<EncodedResource> currentResources = this.resourcesCurrentlyBeingLoaded.get();
 
+		// 如果本地线程不存在正在加载的资源，那么将其添加进去
+		// 如果encodedResource添加进入currentResource失败，表明其中已经存在这个资源，只不过还没有加载完成
+		// TODO 这里是两步骤同时进行了？
 		if (!currentResources.add(encodedResource)) {
 			throw new BeanDefinitionStoreException(
 					"Detected cyclic loading of " + encodedResource + " - check your import definitions!");
 		}
-
+		// 获取配置文件的输入流
 		try (InputStream inputStream = encodedResource.getResource().getInputStream()) {
+			// 封装成InputSource，其中指定了输入流和编码格式
 			InputSource inputSource = new InputSource(inputStream);
+			// 如果存在编码，那么将其添加到InputSource中
 			if (encodedResource.getEncoding() != null) {
 				inputSource.setEncoding(encodedResource.getEncoding());
 			}
+			// 调用同类的方法解析
+			// spring中的方法名前面有个do的一般是真正做事情的方法
+			// 真正的加载BeanDefinition的方法
 			return doLoadBeanDefinitions(inputSource, encodedResource.getResource());
 		}
 		catch (IOException ex) {
@@ -386,8 +402,14 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 	protected int doLoadBeanDefinitions(InputSource inputSource, Resource resource)
 			throws BeanDefinitionStoreException {
 
+		// 主要是将XML配置文件流解析成document对象
+		// 创建Document对象，XML的文档对象，就是dom树
+		// 使用这个Document可以获取XML文件中的节点并且创建节点
+		// TODO SAX解析工具 将XML解析成Document对象
 		try {
 			Document doc = doLoadDocument(inputSource, resource);
+			// 解析dom树，即解析出一个个的属性，并将其保存到BeanDefinition中
+			// 向容器注册BeanDefinition
 			int count = registerBeanDefinitions(doc, resource);
 			if (logger.isDebugEnabled()) {
 				logger.debug("Loaded " + count + " bean definitions from " + resource);
@@ -506,9 +528,15 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 	 * @see BeanDefinitionDocumentReader#registerBeanDefinitions
 	 */
 	public int registerBeanDefinitions(Document doc, Resource resource) throws BeanDefinitionStoreException {
+		// 创建BeanDefinitionDocumentReader，这个是实际从XML的DOM树中读取BeanDefinition
 		BeanDefinitionDocumentReader documentReader = createBeanDefinitionDocumentReader();
+		// 在本次加载前获取注册表BeanDefinitionMap的BeanDefinition数量
+		// getRegistry()是DefaultListableBeanFactory
+		// 因为DefaultListableBeanFactory实现了BeanDefinitionRestory
 		int countBefore = getRegistry().getBeanDefinitionCount();
+		// 加载并注册
 		documentReader.registerBeanDefinitions(doc, createReaderContext(resource));
+		// 本次加载之后容器中BeanDefinition的数量减去之前的数量为本次加载的数量
 		return getRegistry().getBeanDefinitionCount() - countBefore;
 	}
 
@@ -519,6 +547,9 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 	 * @see #setDocumentReaderClass
 	 */
 	protected BeanDefinitionDocumentReader createBeanDefinitionDocumentReader() {
+		// 根据传入的class创建对应的实例
+		// private Class<? extends BeanDefinitionDocumentReader> documentReaderClass = DefaultBeanDefinitionDocumentReader.class;
+		// DefaultBeanDefinitionDocumentReader是DocumentReader的默认实现
 		return BeanUtils.instantiateClass(this.documentReaderClass);
 	}
 

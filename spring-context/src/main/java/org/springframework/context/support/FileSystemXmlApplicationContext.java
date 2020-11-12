@@ -137,6 +137,7 @@ public class FileSystemXmlApplicationContext extends AbstractXmlApplicationConte
 			throws BeansException {
 
 		super(parent);
+		//这是个数组，传入的就是配置文件的绝对路径
 		setConfigLocations(configLocations);
 		if (refresh) {
 			refresh();

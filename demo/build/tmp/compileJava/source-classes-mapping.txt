@@ -4,8 +4,8 @@ top/candysky/entity/factory/UserFactoryBean.java
  top.candysky.entity.factory.UserFactoryBean
 top/candysky/demo/ClassDemo.java
  top.candysky.demo.ClassDemo
-top/candysky/Entrance.java
- top.candysky.Entrance
+top/candysky/service/WelcomeService.java
+ top.candysky.service.WelcomeService
 top/candysky/entity/User.java
  top.candysky.entity.User
 top/candysky/demo/resource/DemoResource.java
@@ -18,5 +18,5 @@ top/candysky/demo/InterfaceDemo.java
  top.candysky.demo.InterfaceDemo
 top/candysky/service/impl/WelcomeServiceImpl.java
  top.candysky.service.impl.WelcomeServiceImpl
-top/candysky/service/WelcomeService.java
- top.candysky.service.WelcomeService
+top/candysky/Entrance.java
+ top.candysky.Entrance
