@@ -49,8 +49,15 @@ import org.springframework.util.ErrorHandler;
  * @author Brian Clozel
  * @see #setTaskExecutor
  */
+
+/**
+ * 如果没有实现ApplicationEventMulticaster，那么默认使用SimpleApplicationEventMulticaster
+ */
 public class SimpleApplicationEventMulticaster extends AbstractApplicationEventMulticaster {
 
+	/**
+	 * 调用执行器，说明SimpleApplicationEventMulticaster多线程处理监听器
+	 */
 	@Nullable
 	private Executor taskExecutor;
 
@@ -154,6 +161,8 @@ public class SimpleApplicationEventMulticaster extends AbstractApplicationEventM
 		Executor executor = getTaskExecutor();
 		for (ApplicationListener<?> listener : getApplicationListeners(event, type)) {
 			if (executor != null) {
+				// 多线程处理时间 异步
+				// TODO 这个了解一下
 				executor.execute(() -> invokeListener(listener, event));
 			}
 			else if (this.applicationStartup != null) {
@@ -167,6 +176,7 @@ public class SimpleApplicationEventMulticaster extends AbstractApplicationEventM
 				invocationStep.end();
 			}
 			else {
+				// 同步
 				invokeListener(listener, event);
 			}
 		}

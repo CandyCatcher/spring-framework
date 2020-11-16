@@ -39,6 +39,8 @@ public interface GenericApplicationListener extends ApplicationListener<Applicat
 	/**
 	 * Determine whether this listener actually supports the given event type.
 	 * @param eventType the event type (never {@code null})
+	 * 但是，筛选的事件类型是ApplicationEvent
+	 * ResolvableType类型是spring4之后添加进来的获取泛型信息的工具，通过它可以获取到泛型的各种信息
 	 */
 	boolean supportsEventType(ResolvableType eventType);
 

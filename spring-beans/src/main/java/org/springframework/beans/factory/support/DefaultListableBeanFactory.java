@@ -995,7 +995,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 
 		// Iterate over a copy to allow for init methods which in turn register new bean definitions.
 		// While this may not be part of the regular factory bootstrap, it does otherwise work fine.
-		// 获取容器内加载的所有BeanDefinition
+		// 获取容器内已经注册好的所有BeanDefinition
 		List<String> beanNames = new ArrayList<>(this.beanDefinitionNames);
 
 		// Trigger initialization of all non-lazy singleton beans...
@@ -1006,12 +1006,12 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 			// 这时候就使用getMergedLocalBeanDefinition方法做了一次转化，将非RootBeanDefinition转换为RootBeanDefinition以供后续操作
 			// 注意如果当前BeanDefinition存在父BeanDefinition，会基于父BeanDefinition生成一个RootBeanDefinition，然后再将调用OverrideFrom子BeanDefinition的相关属性覆写进去
 			RootBeanDefinition bd = getMergedLocalBeanDefinition(beanName);
-			// 如果Bean不是抽象的，是单例的，不是懒加载的，则开始创建单例对象通过调用getBean(beanName)方法初始化
+			// 如果Bean不是抽象的（可以实例化的），是单例的，不是懒加载的，则开始创建单例对象通过调用getBean(beanName)方法初始化
 			if (!bd.isAbstract() && bd.isSingleton() && !bd.isLazyInit()) {
 				// 判断当前Bean是否实现了FactoryBean接口，如果实现了，判断是否要立即初始化
 				// 根据Bean是否实现了SmartFactoryBean并且重写的内部方法isEagerInit放回true
 				if (isFactoryBean(beanName)) {
-					// 如果是FactoryBean，则需要加上FACTORY_BEAN_PREFIX，才能实例化该Bean
+					// 如果是FactoryBean，则需要加上FACTORY_BEAN_PREFIX（加上一个前缀），才能实例化该Bean
 					// 否则实例化的是FactoryBean的子类
 					Object bean = getBean(FACTORY_BEAN_PREFIX + beanName);
 					if (bean instanceof FactoryBean) {
@@ -1046,9 +1046,10 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 		// Trigger post-initialization callback for all applicable beans...
 		// 触发所有适用 bean 的后初始化回调
 		for (String beanName : beanNames) {
+			// 从容器的缓存获取bean的实例，防止重复创建
 			Object singletonInstance = getSingleton(beanName);
 
-			// 该单例是SmartInitializingSingleton类型的
+			// 看看该单例是否是SmartInitializingSingleton类型的 批量处理初始化好的singleton的实例
 			if (singletonInstance instanceof SmartInitializingSingleton) {
 				StartupStep smartInitialize = this.getApplicationStartup().start("spring.beans.smart-initialize")
 						.tag("beanName", beanName);

@@ -32,9 +32,13 @@ package org.springframework.beans.factory;
  * @author Juergen Hoeller
  * @since 3.1
  *
+ * aware的意思是可感知的，类去感知容器的——就像动画片的召唤一样，不同的aware可召唤到不同的神兽
+ *
  * 某些情况下需要在bean中对容器进行操作的
  * 那么需要在bean中设置对容器的感知了
  * 这便是Aware接口的作用
+ *
+ * 一个方法也没有
  */
 public interface Aware {
 

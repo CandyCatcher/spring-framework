@@ -34,6 +34,15 @@ import org.springframework.lang.Nullable;
  * @author Stephane Nicoll
  * @see ApplicationListener
  */
+
+/**
+ * ApplicationEventPublisher只能用来发布事件
+ * ApplicationEventMulticaster拥有注册、删除监听器的方法以及发布事件的方法
+ *
+ * 因为bean和容器本身只是想发布事件，而不想维护监听器这些，框架抽象出事件发布器接口，将ApplicationEventMulticaster作为代理
+ * 就像ApplicationContext用DefaultListableBeanFactory作为代理一样
+ */
+// TODO 这个不太明白
 public interface ApplicationEventMulticaster {
 
 	/**

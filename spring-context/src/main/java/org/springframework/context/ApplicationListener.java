@@ -43,6 +43,10 @@ public interface ApplicationListener<E extends ApplicationEvent> extends EventLi
 	/**
 	 * Handle an application event.
 	 * @param event the event to respond to
+	 *
+	 * 接受的参数是ApplicationEvent，该方法是用来处理事件的
+	 * 用户可以直接实现该方法自定义监听器
+	 * 可以通过注解的方式实现事件的监听@EventListener
 	 */
 	void onApplicationEvent(E event);
 

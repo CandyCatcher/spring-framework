@@ -39,6 +39,11 @@ package org.springframework.beans.factory;
  * @see #isPrototype()
  * @see #isSingleton()
  */
+
+/**
+ * 这个框架是留个spring框架来使用的
+ * @param <T>
+ */
 public interface SmartFactoryBean<T> extends FactoryBean<T> {
 
 	/**

@@ -27,6 +27,16 @@ import java.util.EventObject;
  * @see org.springframework.context.ApplicationListener
  * @see org.springframework.context.event.EventListener
  */
+
+/**
+ * spring的事件驱动模型
+ *
+ * 事件驱动模型的三大部分：
+ *   事件：ApplicationEvent抽象类，继承jdk的EventObject
+ *		通过里面的source成员变量获得到事件源
+ * 事件监听器：ApplicationListener
+ * 事件发布器：Publisher以及Multicaster
+ */
 public abstract class ApplicationEvent extends EventObject {
 
 	/** use serialVersionUID from Spring 1.2 for interoperability. */
@@ -40,6 +50,11 @@ public abstract class ApplicationEvent extends EventObject {
 	 * Create a new {@code ApplicationEvent}.
 	 * @param source the object on which the event initially occurred or with
 	 * which the event is associated (never {@code null})
+	 *
+	 * source是事件源，在spring中指的是事件发布者
+	 * 在spring4.2之前，事件必须继承自ApplicationEvent，而从spring4.2之后，框架提供了一个叫做payloadApplicationEvent的子类
+	 * 这是一个泛型类，所以可以包装任意类型，就不需要强制继承ApplicationEvent了。
+	 * 在容器内部帮我们发送任意类型的事件对象时，框架对象会自动包装为PayloadApplicationEvent这个事件对象
 	 */
 	public ApplicationEvent(Object source) {
 		super(source);

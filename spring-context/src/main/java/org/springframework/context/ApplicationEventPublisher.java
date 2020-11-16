@@ -30,6 +30,13 @@ package org.springframework.context;
  * @see org.springframework.context.event.ApplicationEventMulticaster
  * @see org.springframework.context.event.EventPublicationInterceptor
  */
+
+/**
+ * ApplicationContext实现了这个接口
+ *
+ * 同时存在ApplicationEventPublisherAware接口，所以在bean中可以通过Aware获取到ApplicationEventPublisher
+ * 其实就是获取到容器这个实例了，然后就可以发布自定义的事件给容器注册的监听器来处理了
+ */
 @FunctionalInterface
 public interface ApplicationEventPublisher {
 
