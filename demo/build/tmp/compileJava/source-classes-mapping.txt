@@ -2,23 +2,23 @@ top/candysky/service/WelcomeService.java
  top.candysky.service.WelcomeService
 top/candysky/dao/WelcomeDao.java
  top.candysky.dao.WelcomeDao
-top/candysky/entity/factory/UserFactoryBean.java
- top.candysky.entity.factory.UserFactoryBean
+top/candysky/dao/impl/WelcomeDaoImpl.java
+ top.candysky.dao.impl.WelcomeDaoImpl
 top/candysky/demo/ClassDemo.java
  top.candysky.demo.ClassDemo
 top/candysky/service/impl/WelcomeServiceImpl.java
  top.candysky.service.impl.WelcomeServiceImpl
-top/candysky/entity/User.java
- top.candysky.entity.User
-top/candysky/controller/WelcomeController.java
- top.candysky.controller.WelcomeController
-top/candysky/dao/impl/WelcomeDaoImpl.java
- top.candysky.dao.impl.WelcomeDaoImpl
 top/candysky/demo/InterfaceDemo.java
  top.candysky.demo.InterfaceDemo
+top/candysky/controller/WelcomeController.java
+ top.candysky.controller.WelcomeController
 top/candysky/postprocessor/CustomizedBeanDefinitionRegistryPostProcessor.java
  top.candysky.postprocessor.CustomizedBeanDefinitionRegistryPostProcessor
-top/candysky/Entrance.java
- top.candysky.Entrance
+top/candysky/entity/factory/UserFactoryBean.java
+ top.candysky.entity.factory.UserFactoryBean
 top/candysky/postprocessor/CustomizedBeanPostProcessor.java
  top.candysky.postprocessor.CustomizedBeanPostProcessor
+top/candysky/entity/User.java
+ top.candysky.entity.User
+top/candysky/Entrance.java
+ top.candysky.Entrance

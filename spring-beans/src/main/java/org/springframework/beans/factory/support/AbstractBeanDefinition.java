@@ -1182,9 +1182,23 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	 * Checks for existence of a method with the specified name.
 	 * @throws BeanDefinitionValidationException in case of validation failure
 	 */
+	/*
+	 <bean id="myTestBean" class="io.spring.test.MyTestBean" >
+	      <lookup-method name="getUserBean" bean="teacher"/>
+	      <replaced-method name="changedMethod" replacer="replacer"/>
+	 </bean>
+	 <bean id="teacher" class="io.spring.test.Teacher" />
+	 <bean id="student" class="io.spring.test.Student" />
+	 <bean id="replacer" class="io.spring.test.Replacer" />
+
+	 如果有lookup-method这个属性的话，那么会去teacher这个类中查看有没有getUserBean这个方法
+	 如果有replaced-method的话，那么会去MyTestBean这个类中查看有没有changedMethod这个即将被替换的类
+	 */
 	public void prepareMethodOverrides() throws BeanDefinitionValidationException {
 		// Check that lookup methods exist and determine their overloaded status.
 		if (hasMethodOverrides()) {
+			// 如果有lookup、replaced标记的属性，会保存到MethodOverrides中
+			// 遍历时做一下方法验证
 			getMethodOverrides().getOverrides().forEach(this::prepareMethodOverride);
 		}
 	}
@@ -1196,7 +1210,11 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	 * @param mo the MethodOverride object to validate
 	 * @throws BeanDefinitionValidationException in case of validation failure
 	 */
+	/*
+	循环每一个BeanDefinition的override属性时会被调用
+	 */
 	protected void prepareMethodOverride(MethodOverride mo) throws BeanDefinitionValidationException {
+		// 方法的数量
 		int count = ClassUtils.getMethodCountForName(getBeanClass(), mo.getMethodName());
 		if (count == 0) {
 			throw new BeanDefinitionValidationException(
@@ -1205,6 +1223,8 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 		}
 		else if (count == 1) {
 			// Mark override as not overloaded, to avoid the overhead of arg type checking.
+			// 如果不存在重载，在使用吗CGLIB增强阶段就不需要进行校验了
+			// 直接找打到某个方法进行增强即可，否则在增强阶段还需要进行特殊的处理
 			mo.setOverloaded(false);
 		}
 	}

@@ -500,14 +500,20 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		// Make sure bean class is actually resolved at this point, and
 		// clone the bean definition in case of a dynamically resolved Class
 		// which cannot be stored in the shared merged bean definition.
+		// 判断需要创建的Bean是否可以实例化，即是否可以通过当前的类加载器加载
 		Class<?> resolvedClass = resolveBeanClass(mbd, beanName);
 		if (resolvedClass != null && !mbd.hasBeanClass() && mbd.getBeanClassName() != null) {
+			// 克隆一份BeanDefinition，用来设置上加载出来的class对象
+			// 之所以后续用该副本操作，是因为不希望将解析的class绑定到缓存里的BeanDefinition
+			// 因为class有可能是每次都需要动态解析出来的
 			mbdToUse = new RootBeanDefinition(mbd);
 			mbdToUse.setBeanClass(resolvedClass);
 		}
 
 		// Prepare method overrides.
+		// 校验和准备Bean中的方法覆盖
 		try {
+			// 判断BeanDefinition是否有方法的覆盖
 			mbdToUse.prepareMethodOverrides();
 		}
 		catch (BeanDefinitionValidationException ex) {
@@ -517,8 +523,14 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 
 		try {
 			// Give BeanPostProcessors a chance to return a proxy instead of the target bean instance.
+			// 如果Bean配置了初始化前和初始化后的处理器，则试图返回一个需要创建Bean的代理对象
+			// resolveBeforeInstantiation只是针对有自定义的targetsource，
+			// 因为自定义的targetsource不是spring的bean那么肯定不需要进行后续的一系列的实例化,初始化。
+			// 所以可以在resolveBeforeInstantiation直接进行proxy
 			Object bean = resolveBeforeInstantiation(beanName, mbdToUse);
 			if (bean != null) {
+				// 能获取到bean实例，可以直接返回，终止
+				// 说明这个过程已被用户接管了，spring不用管；
 				return bean;
 			}
 		}
@@ -528,6 +540,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		}
 
 		try {
+			// 创建bean入口
 			Object beanInstance = doCreateBean(beanName, mbdToUse, args);
 			if (logger.isTraceEnabled()) {
 				logger.trace("Finished creating instance of bean '" + beanName + "'");
@@ -1111,9 +1124,14 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	@Nullable
 	protected Object resolveBeforeInstantiation(String beanName, RootBeanDefinition mbd) {
 		Object bean = null;
+		// 如果beforeInstantiationResolved还没有设置或者是false（说明还没有需要在实例化前执行的操作）
 		if (!Boolean.FALSE.equals(mbd.beforeInstantiationResolved)) {
 			// Make sure bean class is actually resolved at this point.
+			// mbd.isSynthetic()默认是false， 标记为true的比如aop注入时的代理内部类
+			// 如果注册了InstantiationAwareBeanPostProcessors类型的BeanPostProcessor，
+			// 然后就是容器初始化时就注册了bean级别的后置处理器
 			if (!mbd.isSynthetic() && hasInstantiationAwareBeanPostProcessors()) {
+				// 用来确定bean的类型
 				Class<?> targetType = determineTargetType(beanName, mbd);
 				if (targetType != null) {
 					bean = applyBeanPostProcessorsBeforeInstantiation(targetType, beanName);
@@ -1140,7 +1158,12 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 */
 	@Nullable
 	protected Object applyBeanPostProcessorsBeforeInstantiation(Class<?> beanClass, String beanName) {
+		// 后置器用责任链模式
+		// TODO 责任链模式
 		for (InstantiationAwareBeanPostProcessor bp : getBeanPostProcessorCache().instantiationAware) {
+			// 看有没有处理结果
+			// 如果有谁处理了结果，那么就会立即返回
+			// 另外，我们可以去实现postProcessBeforeInstantiation接口这个方法，可以偷梁换柱
 			Object result = bp.postProcessBeforeInstantiation(beanClass, beanName);
 			if (result != null) {
 				return result;
