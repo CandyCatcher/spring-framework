@@ -21,13 +21,13 @@ import top.candysky.service.WelcomeService;
 public class Entrance {
 	public static void main(String[] args) {
 		//System.out.println("hello world");
-		String xmlPath = "D:\\spring-framework\\demo\\src\\main\\resources\\spring\\spring-config.xml";
-		FileSystemXmlApplicationContext context = new FileSystemXmlApplicationContext(xmlPath);
-		WelcomeService welcomeService = (WelcomeService) context.getBean("welcomeService");
-//		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(Entrance.class);
-//		BeanDefinition welcomeController = context.getBeanDefinition("welcomeController");
-//		User user = (User) context.getBean("userPoster");
-//		System.out.println("创建的对象" + user);
+		//String xmlPath = "D:\\spring-framework\\demo\\src\\main\\resources\\spring\\spring-config.xml";
+		//FileSystemXmlApplicationContext context = new FileSystemXmlApplicationContext(xmlPath);
+		//WelcomeService welcomeService = (WelcomeService) context.getBean("welcomeService");
+		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(Entrance.class);
+		//BeanDefinition welcomeController = context.getBeanDefinition("welcomeController");
+		User user = (User) context.getBean("userPoster");
+		System.out.println("创建的对象" + user);
 
 		//System.out.println(welcomeController.getDestroyMethodName());
 		//System.out.println(welcomeController.toString());
