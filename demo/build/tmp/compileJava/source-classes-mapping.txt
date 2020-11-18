@@ -12,13 +12,15 @@ top/candysky/demo/InterfaceDemo.java
  top.candysky.demo.InterfaceDemo
 top/candysky/controller/WelcomeController.java
  top.candysky.controller.WelcomeController
-top/candysky/postprocessor/CustomizedBeanDefinitionRegistryPostProcessor.java
- top.candysky.postprocessor.CustomizedBeanDefinitionRegistryPostProcessor
-top/candysky/entity/factory/UserFactoryBean.java
- top.candysky.entity.factory.UserFactoryBean
-top/candysky/postprocessor/CustomizedBeanPostProcessor.java
- top.candysky.postprocessor.CustomizedBeanPostProcessor
 top/candysky/entity/User.java
  top.candysky.entity.User
+top/candysky/entity/factory/UserFactoryBean.java
+ top.candysky.entity.factory.UserFactoryBean
+top/candysky/postprocessor/CustomizedBeanDefinitionRegistryPostProcessor.java
+ top.candysky.postprocessor.CustomizedBeanDefinitionRegistryPostProcessor
 top/candysky/Entrance.java
  top.candysky.Entrance
+top/candysky/demo/resource/DemoResource.java
+ top.candysky.demo.resource.DemoResource
+top/candysky/postprocessor/CustomizedBeanPostProcessor.java
+ top.candysky.postprocessor.CustomizedBeanPostProcessor
