@@ -164,9 +164,12 @@ public abstract class AnnotationUtils {
 	 * @see #isCandidateClass(Class, Class)
 	 */
 	public static boolean isCandidateClass(Class<?> clazz, String annotationName) {
+		// 这里是看注解标签是不是jdk自带的注解标签
 		if (annotationName.startsWith("java.")) {
 			return true;
 		}
+		// bean对应的class对象是不是java开头的即是不是jdk的类，@Autowired注解不对这种类起作用
+		// 如果类是spring-order接口类型的，都会返回false
 		if (AnnotationsScanner.hasPlainJavaAnnotationsOnly(clazz)) {
 			return false;
 		}

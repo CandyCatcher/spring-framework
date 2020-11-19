@@ -71,10 +71,22 @@ public class InjectionMetadata {
 
 	private static final Log logger = LogFactory.getLog(InjectionMetadata.class);
 
+	/**
+	 * 目标bean的calss对象
+	 */
 	private final Class<?> targetClass;
 
+	/**
+	 * 当post-processor处理bean时，会解析bean Class的所有属性
+	 * 在解析时会判断属性上是否标有@Value或者@Autowired注解
+	 * 有就解析这个属性值，并将解析后的结果放在这里
+	 * 因此在这个集合里保存了被注入需要元素的全量集合（包括Spring处理的或者外部处理的）
+	 */
 	private final Collection<InjectedElement> injectedElements;
 
+	/**
+	 * 和injectedElements一样，不过只保存了由Spring容器默认进行处理的属性或者方法
+	 */
 	@Nullable
 	private volatile Set<InjectedElement> checkedElements;
 
@@ -107,6 +119,7 @@ public class InjectionMetadata {
 		Set<InjectedElement> checkedElements = new LinkedHashSet<>(this.injectedElements.size());
 		for (InjectedElement element : this.injectedElements) {
 			Member member = element.getMember();
+			// 把需要spring容器用默认策略注入的InjectElements集合给保存到checkedElements
 			if (!beanDefinition.isExternallyManagedConfigMember(member)) {
 				beanDefinition.registerExternallyManagedConfigMember(member);
 				checkedElements.add(element);
@@ -157,6 +170,7 @@ public class InjectionMetadata {
 	 * @since 5.2
 	 */
 	public static InjectionMetadata forElements(Collection<InjectedElement> elements, Class<?> clazz) {
+		// 元素放在Element中，目标类放在clazz中
 		return (elements.isEmpty() ? InjectionMetadata.EMPTY : new InjectionMetadata(clazz, elements));
 	}
 
@@ -174,13 +188,18 @@ public class InjectionMetadata {
 
 	/**
 	 * A single injected element.
+	 * 专门保存单个的InjectElement的值
 	 */
 	public abstract static class InjectedElement {
 
+		// 用来保存@ @ 备注接标记的成员，Field还是Method
 		protected final Member member;
 
+		// 用来标记是否为Field被注入
 		protected final boolean isField;
 
+		// 属性描述，javabeans中的接口
+		// 通过它可以对属性进行反射的读或者写操作
 		@Nullable
 		protected final PropertyDescriptor pd;
 

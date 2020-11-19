@@ -1352,6 +1352,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	 * Can be overridden in subclasses.
 	 * @param bw the BeanWrapper to initialize
 	 */
+	// 这里是为了添加bean的一些类型转换工具
 	protected void initBeanWrapper(BeanWrapper bw) {
 		bw.setConversionService(getConversionService());
 		registerCustomEditors(bw);

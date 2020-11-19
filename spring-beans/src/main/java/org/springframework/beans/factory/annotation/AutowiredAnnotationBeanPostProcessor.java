@@ -159,8 +159,11 @@ public class AutowiredAnnotationBeanPostProcessor implements SmartInstantiationA
 	 */
 	@SuppressWarnings("unchecked")
 	public AutowiredAnnotationBeanPostProcessor() {
+		// 这两个方法就是将@Autowired @Value两个标签加入到autowiredAnnotationTypes这个set类型的成员变量里
+		// 前面调用就是为了处理@Autowired @Value @Inject这三个标签
 		this.autowiredAnnotationTypes.add(Autowired.class);
 		this.autowiredAnnotationTypes.add(Value.class);
+
 		try {
 			this.autowiredAnnotationTypes.add((Class<? extends Annotation>)
 					ClassUtils.forName("javax.inject.Inject", AutowiredAnnotationBeanPostProcessor.class.getClassLoader()));
@@ -243,7 +246,9 @@ public class AutowiredAnnotationBeanPostProcessor implements SmartInstantiationA
 
 	@Override
 	public void postProcessMergedBeanDefinition(RootBeanDefinition beanDefinition, Class<?> beanType, String beanName) {
+		// 看名字就知道是去寻找被注解标签修饰的元数据
 		InjectionMetadata metadata = findAutowiringMetadata(beanName, beanType, null);
+		// 这样就完成了。获取到InjectMetadata之后，就可以在合适的时候进行属性的注入了
 		metadata.checkConfigMembers(beanDefinition);
 	}
 
@@ -439,51 +444,78 @@ public class AutowiredAnnotationBeanPostProcessor implements SmartInstantiationA
 	}
 
 
+	/**
+	 * 该方法会对bean进行@Autowired @Value的扫描，扫描到类里面的属性或者方法上面，如果有对应的注解，就把对应的属性或者方法封装起来，封装成InjectionMetadata的实例
+	 */
 	private InjectionMetadata findAutowiringMetadata(String beanName, Class<?> clazz, @Nullable PropertyValues pvs) {
 		// Fall back to class name as cache key, for backwards compatibility with custom callers.
+		// 获取所需要创建的bean对应的InjectMetedata实例在容器缓存中的名字
 		String cacheKey = (StringUtils.hasLength(beanName) ? beanName : clazz.getName());
 		// Quick check on the concurrent map first, with minimal locking.
+		// 获取到名字之后，拿着这名字去容器缓存里去看看有没有创建过对应的InjectionMetadata实例
 		InjectionMetadata metadata = this.injectionMetadataCache.get(cacheKey);
+		// 不管能不能获取到，都会进行refresh
+		// 这里面主要是为了查看是否是空值，或者目标对象类是否是同一个
 		if (InjectionMetadata.needsRefresh(metadata, clazz)) {
 			synchronized (this.injectionMetadataCache) {
+				// 重新获取，就要先删除缓存里的
 				metadata = this.injectionMetadataCache.get(cacheKey);
 				if (InjectionMetadata.needsRefresh(metadata, clazz)) {
 					if (metadata != null) {
 						metadata.clear(pvs);
 					}
+					// 重新创建metadata
 					metadata = buildAutowiringMetadata(clazz);
+					// 将得到的给定类@Autowired相关注解元信息存储在容器缓存中
+					// 第二次就会根据cacheKey获取metadata实例
 					this.injectionMetadataCache.put(cacheKey, metadata);
 				}
 			}
 		}
+		// 不是null，是同一个直接返回
 		return metadata;
 	}
 
+	/**
+	 * 解析给定类@Autowired相关注解的信息
+	 * @param clazz
+	 * @return
+	 */
 	private InjectionMetadata buildAutowiringMetadata(final Class<?> clazz) {
+		// 这个方法看看这个class是否有资格成为@Autowired @Value被解析的候选类
+		// 其实就是看看注解和类是不是普通类
 		if (!AnnotationUtils.isCandidateClass(clazz, this.autowiredAnnotationTypes)) {
 			return InjectionMetadata.EMPTY;
 		}
 
+		// 用一个list存储获取到的被目标注解标注的元素
 		List<InjectionMetadata.InjectedElement> elements = new ArrayList<>();
+		// welcomeController
 		Class<?> targetClass = clazz;
 
+		// 遍历class里面的属性元素以及方法元素
 		do {
 			final List<InjectionMetadata.InjectedElement> currElements = new ArrayList<>();
-
+			// 收集被@Autowired或者@Value标记的Field
+			// 利用反射机制获取给定类中所有的声明字段，获取字段上的注解信息
 			ReflectionUtils.doWithLocalFields(targetClass, field -> {
 				MergedAnnotation<?> ann = findAutowiredAnnotation(field);
 				if (ann != null) {
+					// 获取到field实例之后，就会去看一下field实例是不是静态的，静态的不支持注入
 					if (Modifier.isStatic(field.getModifiers())) {
 						if (logger.isInfoEnabled()) {
 							logger.info("Autowired annotation is not supported on static fields: " + field);
 						}
 						return;
 					}
+					// 之后获取@Autowired的required属性，看看这个注入是否是必须的
 					boolean required = determineRequiredStatus(ann);
+					// 将当前字段元信息封装，添加在返回的集合中
 					currElements.add(new AutowiredFieldElement(field, required));
 				}
 			});
 
+			// 这里是方法元素 收集被@Autowired或者@Value标记的Method
 			ReflectionUtils.doWithLocalMethods(targetClass, method -> {
 				Method bridgedMethod = BridgeMethodResolver.findBridgedMethod(method);
 				if (!BridgeMethodResolver.isVisibilityBridgeMethodPair(method, bridgedMethod)) {
@@ -508,7 +540,7 @@ public class AutowiredAnnotationBeanPostProcessor implements SmartInstantiationA
 					currElements.add(new AutowiredMethodElement(method, required, pd));
 				}
 			});
-
+			// 最后将收集到的目标标记标记的属性和方法实例存储到同一个集合中
 			elements.addAll(0, currElements);
 			targetClass = targetClass.getSuperclass();
 		}
@@ -522,7 +554,9 @@ public class AutowiredAnnotationBeanPostProcessor implements SmartInstantiationA
 		MergedAnnotations annotations = MergedAnnotations.from(ao);
 		for (Class<? extends Annotation> type : this.autowiredAnnotationTypes) {
 			MergedAnnotation<?> annotation = annotations.get(type);
+			// 调用这个方法用来判断元素是否被制定的标签所标记
 			if (annotation.isPresent()) {
+				// 在这里存储了要注入的成员变量
 				return annotation;
 			}
 		}
