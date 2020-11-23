@@ -41,6 +41,11 @@ import org.springframework.util.StringUtils;
  * @author Rob Harrop
  * @since 13 May 2001
  */
+
+/**
+ * propertyValues的实现类
+ * bean的属性解析就是和这个类打交道
+ */
 @SuppressWarnings("serial")
 public class MutablePropertyValues implements PropertyValues, Serializable {
 

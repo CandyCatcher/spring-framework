@@ -49,6 +49,10 @@ import org.springframework.util.ObjectUtils;
  * @author Juergen Hoeller
  * @since 2.5
  */
+/*
+ * 用来描述bean里面的具体属性
+ * 通过它可以获得bean里面的getter、setter方法
+ */
 @SuppressWarnings("serial")
 public class DependencyDescriptor extends InjectionPoint implements Serializable {
 
