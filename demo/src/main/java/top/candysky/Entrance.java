@@ -6,6 +6,9 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.support.FileSystemXmlApplicationContext;
 import top.candysky.controller.WelcomeController;
+import top.candysky.dao.impl.BoyFriend;
+import top.candysky.dao.impl.Company;
+import top.candysky.dao.impl.Staff;
 import top.candysky.entity.User;
 import top.candysky.entity.factory.UserFactoryBean;
 import top.candysky.service.WelcomeService;
@@ -25,9 +28,31 @@ public class Entrance {
 		//FileSystemXmlApplicationContext context = new FileSystemXmlApplicationContext(xmlPath);
 		//WelcomeService welcomeService = (WelcomeService) context.getBean("welcomeService");
 		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(Entrance.class);
+		/*
+		容器在初始化的时候不是创建了bean实例了吗？为什么这里要显示调用呢？
+		AbstractApplicationContext的refresh方法初始化的是非延迟加载的单例
+		可以去DefaultListableBeanFactory的preInstantiateSingletons方法去看
+		可以看到如果Bean不是抽象的（可以实例化的），是单例的，不是懒加载的，则开始创建单例对象通过调用getBean(beanName)方法初始化
+		if (!bd.isAbstract() && bd.isSingleton() && !bd.isLazyInit())
+		 */
+		//执行的话，会报错，说明spring不支持构造器循环依赖的
+		Company company = (Company) context.getBean("company");
+		//执行的话，会报错，说明spring不支持protoype循环依赖的
+		BoyFriend boyFriend = (BoyFriend) context.getBean("boyFriend");
+		/*
+		解决循环依赖的关键在于三级缓存
+		三级缓存除了解决循环依赖，还解决了保持单例唯一性的问题。因为从缓存中取出的bean实例要保证是唯一的
+		所以三级缓存支持不了protoype，因为protoype不是唯一的。所以protoype的bean没有使用三级缓存
+		而是将简单的名字放到缓存。正因为没有三级缓存的支持，才导致protoype不支持循环依赖。因为没有实力缓存
+
+
+		另外，单例的构造器循环依赖也是不支持的
+		AbstractAutowiredCapableBeanFactory的autowireConstructor方法
+		 */
+
 		//BeanDefinition welcomeController = context.getBeanDefinition("welcomeController");
-		User user = (User) context.getBean("userPoster");
-		System.out.println("创建的对象" + user);
+		//User user = (User) context.getBean("userPoster");
+		//System.out.println("创建的对象" + user);
 
 		//System.out.println(welcomeController.getDestroyMethodName());
 		//System.out.println(welcomeController.toString());

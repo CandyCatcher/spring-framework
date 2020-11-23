@@ -577,6 +577,20 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 * @see #instantiateUsingFactoryMethod
 	 * @see #autowireConstructor
 	 */
+	/*
+	循环依赖的问题：
+	假设A先创建，首先来到doCreateBean，经过各种包装，被createBeanInstance处理了之后，一个没有任何属性的A的实例
+	然后在调用addSingletonFactory之前，将A实例放到ObjectFactory里面，然后调用addSingletonFactory，将相应的ObjectFactory
+	添加到三级缓存当中，此时只有三级缓存保存了A的实例。随后调用populateBean方法给属性赋值。由于A依赖于B，在populateBean方法会再次调用
+	doGetBean方法在容器里尝试获取实例B。但是实例B是没有创建出来的，又会递归地调用doCreateBean方法，在方法里调用createBeanInstance
+	创建实例B，将其对应的工厂ObjectFactory放到三级缓存中。随后在B里调用populateBean方法，调用AbstractBeanFactory的doGetBean方法，
+	调用DefaultSingletonBeanRegistry的getSingleton方法，在三级缓存中尝试获取A实例对用的ObjectFactory。然后对于实例B，就会执行
+	完剩余的逻辑，返回一个完整的实例B。由于doCreateBean方法是doGetBean方法调用的，所以B的实例返回。这里需要注意的是调用的createBean方法
+	是在执行getSingleton方法中调用ObjectFactory的getObject方法时执行的。在这个（和三级缓存的getSingleton方法不一样）方法中，
+	最终会执行addSingleton，将实例B添加到一级缓存中，表明已经完全创建了bean实例。最后返回B实例。现在回到A的populateBean方法，同样执行
+	之后的步骤创建完整的A，并放到一级缓存里
+
+	 */
 	protected Object doCreateBean(String beanName, RootBeanDefinition mbd, @Nullable Object[] args)
 			throws BeanCreationException {
 
@@ -594,6 +608,10 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			// 1.工厂方法创建
 			// 2.构造方法的方式注入
 			// 3.无参构造方法注入
+			/*
+			对于构造器注入，并不会等到populateBean方法才注入属性，而是在bean实例创建出来的时候
+			这里执行的
+			 */
 			instanceWrapper = createBeanInstance(beanName, mbd, args);
 		}
 		// 获取被包装的Bean，后续对bean的改动相当于对Wrapper的改动，反之依然
@@ -644,7 +662,10 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 				logger.trace("Eagerly caching bean '" + beanName +
 						"' to allow for resolving potential circular references");
 			}
+
 			/*
+			 解决循环依赖的关键之处
+
 			 这里是一个匿名内部类，为了防止循环引用，尽早持有对象的引用
 			 这里需要注意的是，传入的ObjectFactory匿名类参数，实现的getObject方法不是先前的createBean方法了
 			 而是getEarlyBeanReference
@@ -655,7 +676,6 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			 最终是在DefaultSingletonBeanRegistry的singletonObject = singletonFactory.getObject();这个地方
 			 在这里调用了getEarlyBeanReference
 			 */
-
 			addSingletonFactory(beanName, () -> getEarlyBeanReference(beanName, mbd, bean));
 		}
 
@@ -698,6 +718,12 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 					// 确保根据名称获取到的的已注册的Bean和正在实例化的Bean是同一个
 					exposedObject = earlySingletonReference;
 				}
+				/*
+				如果bean改变了，执行这里，说明initialization将exposedObject改变了
+				之所会出现这种情况，是因为beanPostProcessor是供用户使用的
+				用户可以在方法里做事情，会出现bean实例的情况
+				然后看一下有没有别的bean依赖这个bean的情况，如果有的话，报错
+				 */
 				// 如果上面的if没通过，则表明引用的bean和注入的bean不一致，则需要看看依赖于此Bean的先前是否已经注入了不完善的Bean
 				// allowRawInjectionDespiteWrapping 标注是否允许此Bean的原始类型被注入到其它Bean里面，
 				// 即使自己最终会被包装（代理）
@@ -713,7 +739,9 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 							actualDependentBeans.add(dependentBean);
 						}
 					}
-					/**
+					/*
+					 * 如果执行到这里，说明有别的bena执行了populateBean方法将bean实例设置上了
+					 * 设置后，又在这里创建一个新的bean实例，不满足单例
 					 * 因为bean创建后其所依赖的bean一定是已经创建的
 					 * actualDependentBeans不为空则表示当前bean创建后其依赖的bean却没有全部创建完，也就是说存在循环依赖
 					 */
@@ -732,7 +760,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 
 		// Register bean as disposable.
 		try {
-			// 注册Bean的销毁逻辑
+			// 如果通过校验，则会在这里注册Bean的销毁逻辑
 			registerDisposableBeanIfNecessary(beanName, bean, mbd);
 		}
 		catch (BeanDefinitionValidationException ex) {
@@ -1328,6 +1356,13 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		// Preferred constructors for default construction?
 		ctors = mbd.getPreferredConstructors();
 		if (ctors != null) {
+			/*
+			带参的构造函数是在这里触发的
+			由于此时参数的实例还没有创建出来
+			在这里会调用getBean尝试创建B实例，此时因为B的构造方法有需要A的实例
+			而A的实例又没有放到缓存中，会造成无限循环
+			为避免这个，spring会提前将正在创建的bean的名字列表缓存起来
+			 */
 			return autowireConstructor(beanName, mbd, ctors, null);
 		}
 
@@ -1504,6 +1539,11 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		// Give any InstantiationAwareBeanPostProcessors the opportunity to modify the
 		// state of the bean before properties are set. This can be used, for example,
 		// to support styles of field injection.
+		/*
+		让bean无视spring里面特殊的bean，并看一下容器里有没有注册了自定义的instantiationAwareBeanPostProcessor
+		如果有，则使用责任链模式使用这些beanPostProcessor的postProcessAfterInstantiation方法
+		这里是属性注入之前最后一次去改变属性的注入值，也可以去控制是否去执行后续的填充步骤
+		 */
 		if (!mbd.isSynthetic() && hasInstantiationAwareBeanPostProcessors()) {
 			for (InstantiationAwareBeanPostProcessor bp : getBeanPostProcessorCache().instantiationAware) {
 				if (!bp.postProcessAfterInstantiation(bw.getWrappedInstance(), beanName)) {

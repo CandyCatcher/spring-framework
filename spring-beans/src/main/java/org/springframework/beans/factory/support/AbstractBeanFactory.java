@@ -296,6 +296,13 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 			// isPrototypeCurrentlyInCreation：和前面的isSingletonCurrentlyInCreation相同，spring也为scope为prototype的创建一个缓存
 			// 类型是ThreadLocal
 			// 同时这里说明默认不支持循环依赖的
+			/*
+			如果bean是protoype的，并且是在创建中的，说明getBean方法是发生了递归的
+			是因为prototypesCurrentlyInCreation是ThreadLocal的
+			因为第一次取的时候是没有的，就会向正在创建的列表prototypesCurrentlyInCreation中添加bean的名字
+			再一次执行到这里的时候，就会发现缓存是有值的
+			说明是循环调用了
+			 */
 			if (isPrototypeCurrentlyInCreation(beanName)) {
 				throw new BeanCurrentlyInCreationException(beanName);
 			}
@@ -394,7 +401,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 				getObject方法就是getEarlyBeanReference了
 				最后就会进入BeanPostProcessor后处理器，遍历处理，进行AOP
 				 */
-				// 在这里才是真正的创建bean实例了
+				// 获取不到bean实例的话，就会创建bean
 				// Create bean instance.
 				// scope为singleton
 				if (mbd.isSingleton()) {
