@@ -441,6 +441,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 
 		Object result = existingBean;
 		for (BeanPostProcessor processor : getBeanPostProcessors()) {
+			// postProcessAfterInitialization的实现类
 			Object current = processor.postProcessAfterInitialization(result, beanName);
 			if (current == null) {
 				return result;
@@ -487,6 +488,9 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 * Central method of this class: creates a bean instance,
 	 * populates the bean instance, applies post-processors, etc.
 	 * @see #doCreateBean
+	 */
+	/*
+	AbstractBeanFactory方法的createBean在这里执行
 	 */
 	@Override
 	protected Object createBean(String beanName, RootBeanDefinition mbd, @Nullable Object[] args)
@@ -541,6 +545,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 
 		try {
 			// 创建bean入口
+			// 执行createBean
 			Object beanInstance = doCreateBean(beanName, mbdToUse, args);
 			if (logger.isTraceEnabled()) {
 				logger.trace("Finished creating instance of bean '" + beanName + "'");
@@ -622,20 +627,35 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 
 		// Eagerly cache singletons to be able to resolve circular references
 		// even when triggered by lifecycle interfaces like BeanFactoryAware.
-		// 向容器中缓存单例模式的Bean对象，以防循环引用
-		// 判断是否是早期引用的bean，如果是，则允许其提前暴露引用
-		// 这里判断的逻辑主要有三个：
-		// 1.是否为单例
-		// 2.是否允许循环引用
-		// 3.是否是在创建中的bean
+		/*
+		向容器中缓存单例模式的Bean对象，以防循环引用
+		判断是否是早期引用的bean，如果是，则允许其提前暴露引用
+		这里判断的逻辑主要有三个：
+		 1.是否为单例
+		 2.是否允许循环引用
+		 3.是否是在创建中的bean
+		满足这几个条件就允许bean在没有完全创建好时，就能够暴露出来供外界使用的
+		 */
 		boolean earlySingletonExposure = (mbd.isSingleton() && this.allowCircularReferences &&
 				isSingletonCurrentlyInCreation(beanName));
+		// welcomeController是允许的
 		if (earlySingletonExposure) {
 			if (logger.isTraceEnabled()) {
 				logger.trace("Eagerly caching bean '" + beanName +
 						"' to allow for resolving potential circular references");
 			}
-			// 这里是一个匿名内部类，为了防止循环引用，尽早持有对象的引用
+			/*
+			 这里是一个匿名内部类，为了防止循环引用，尽早持有对象的引用
+			 这里需要注意的是，传入的ObjectFactory匿名类参数，实现的getObject方法不是先前的createBean方法了
+			 而是getEarlyBeanReference
+
+			 需要注意的是，ObjectFactory的方法getObject方法，getEarlyBeanReference方法不是在这里执行的，也就是不是在doCreateBean方法执行的
+			 这里只是将相关的getObject方法给注册上去，实际上执行的地方是前面尝试从缓存里获取bean实例的地方：
+			 AbstractBeanFactory的Object sharedInstance = getSingleton(beanName);这个地方
+			 最终是在DefaultSingletonBeanRegistry的singletonObject = singletonFactory.getObject();这个地方
+			 在这里调用了getEarlyBeanReference
+			 */
+
 			addSingletonFactory(beanName, () -> getEarlyBeanReference(beanName, mbd, bean));
 		}
 
@@ -644,7 +664,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		// 这个exposedObject在初始化完成之后返回作为依赖注入完成后的Bean
 		Object exposedObject = bean;
 		try {
-			// 填充bean实例的属性
+			// 注入bean实例的属性
 			populateBean(beanName, mbd, instanceWrapper);
 			// 初始化bean，过程如下：
 			// 1：判断是否实现了BeanNameAware，BeanClassLoaderAware，
@@ -667,10 +687,13 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		}
 		// 若允许循环依赖，则解决相关的循环依赖
 		if (earlySingletonExposure) {
-			// 获取指定名称的已注册的单例模式Bean对象
+			// 又来获取指定名称的已注册的单例模式Bean对象
 			Object earlySingletonReference = getSingleton(beanName, false);
+
 			if (earlySingletonReference != null) {
 				// 如果经过initializeBean执行后返回的bean还是同一个（不是代理对象实例,即没有被增强）
+
+				// 这里往前看，initializeBean(beanName, exposedObject, mbd);会对exposedObject进行初始化
 				if (exposedObject == bean) {
 					// 确保根据名称获取到的的已注册的Bean和正在实例化的Bean是同一个
 					exposedObject = earlySingletonReference;
@@ -1032,8 +1055,8 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 */
 	/*
 	点开之后又能看到一组BeanPostProcessor
-	也就是说调用getObject方法返回bean实例的时候，先来检查一下容器里有没有实现了SmartInstantiationAwareBeanPostProcessor的类
-	如果有，就调用getEarlyBeanReference方法对bean实例进行包装处理
+	也就是说调用getObject方法返回bean实例的时候，先来检查一下容器里有没有被注册了实现了SmartInstantiationAwareBeanPostProcessor的类
+	如果有，就调用这些类的getEarlyBeanReference方法对bean实例进行包装处理
 	里面的AbstractAutoProxyCreator是后续AOP的关键
 	 */
 	protected Object getEarlyBeanReference(String beanName, RootBeanDefinition mbd, Object bean) {
@@ -1932,6 +1955,10 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 * @see #invokeInitMethods
 	 * @see #applyBeanPostProcessorsAfterInitialization
 	 */
+	/*
+	主要是调用beanPostProcessor对bean进行包装处理，可能赋值后的exposerBean就面目全非了
+	AOP也会对bean进行包装呀，不也是会变吗？spring已经考虑到这一点了
+	 */
 	protected Object initializeBean(String beanName, Object bean, @Nullable RootBeanDefinition mbd) {
 		if (System.getSecurityManager() != null) {
 			AccessController.doPrivileged((PrivilegedAction<Object>) () -> {
@@ -1957,6 +1984,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 					beanName, "Invocation of init method failed", ex);
 		}
 		if (mbd == null || !mbd.isSynthetic()) {
+			// 这里
 			wrappedBean = applyBeanPostProcessorsAfterInitialization(wrappedBean, beanName);
 		}
 

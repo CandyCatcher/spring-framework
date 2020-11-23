@@ -178,8 +178,12 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	 * @param singletonFactory the factory for the singleton object
 	 */
 	/*
+	之前在前面也使用过，对@Autowired和@Value标签标记的属性进行记录，保存到InjectionElements中
+	所以这里第一层缓存是没有的，因为bean实例还没有健全
+	来到if里面
 	将不完备的bean实例从二级缓存中移除，将bean实例包装成ObjectFactory实例，添加到三级缓存中
 	这也是能在三级缓存中能取出ObjectFactory的原因
+	最后将单例bena的名字放到已经注册过的单例bean的列表里面
 	 */
 	protected void addSingletonFactory(String beanName, ObjectFactory<?> singletonFactory) {
 		Assert.notNull(singletonFactory, "Singleton factory must not be null");
@@ -214,6 +218,13 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	 * @param beanName the name of the bean to look for
 	 * @param allowEarlyReference whether early references should be created or not
 	 * @return the registered singleton object, or {@code null} if none found
+	 */
+	/*
+	执行getBean方法
+	就会调用doGetBean方法做事情
+	doGetBean方法就会调用这个方法尝试从三级缓存中获取bean实例
+	没有获取到的话
+
 	 */
 	@Nullable
 	protected Object getSingleton(String beanName, boolean allowEarlyReference) {

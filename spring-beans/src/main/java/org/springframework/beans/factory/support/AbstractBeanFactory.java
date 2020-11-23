@@ -383,6 +383,17 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 					}
 				}
 
+				/*
+				如果从三级缓存中都没有获取到bean实例的话，容器就会来到这里调用createBean方法
+				createBean方法里面会进一步调用doCreateBean方法
+				最终就会来到AbstractAutowireCapableBeanFactory的doCreateBean
+				addSingletonFactory(beanName, () -> getEarlyBeanReference(beanName, mbd, bean));
+				doCreateBean执行完会将包装了Bean实例的ObjectFactory实例注册到三级缓存当中
+				再次调用getBean的时候，即执行AbstractBeanFactory的doGetBean的getSingleton
+				再次就会来到缓存里能获取ObjectFactory实例了，就能执行getObject这个方法了
+				getObject方法就是getEarlyBeanReference了
+				最后就会进入BeanPostProcessor后处理器，遍历处理，进行AOP
+				 */
 				// 在这里才是真正的创建bean实例了
 				// Create bean instance.
 				// scope为singleton
