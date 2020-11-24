@@ -244,6 +244,9 @@ public class AutowiredAnnotationBeanPostProcessor implements SmartInstantiationA
 	}
 
 
+	/*
+	将@Autowired和@Value修饰的属性实例注册到InjecttionMetedata里面
+	 */
 	@Override
 	public void postProcessMergedBeanDefinition(RootBeanDefinition beanDefinition, Class<?> beanType, String beanName) {
 		// 看名字就知道是去寻找被注解标签修饰的元数据
@@ -399,8 +402,13 @@ public class AutowiredAnnotationBeanPostProcessor implements SmartInstantiationA
 
 	@Override
 	public PropertyValues postProcessProperties(PropertyValues pvs, Object bean, String beanName) {
+		// 获取指定类中@Autowired相关注解的元信息
+		// findAutowiringMetadata在postProcessMergedBeanDefinition方法中已经被调用，
+		// 将InjectionMetada对象放在了缓存中
+		// 这里从缓存中获取bean
 		InjectionMetadata metadata = findAutowiringMetadata(beanName, bean.getClass(), pvs);
 		try {
+			// 对Bean的属性进行自动注入
 			metadata.inject(bean, beanName, pvs);
 		}
 		catch (BeanCreationException ex) {
@@ -657,47 +665,70 @@ public class AutowiredAnnotationBeanPostProcessor implements SmartInstantiationA
 			this.required = required;
 		}
 
+		/*
+		从这个类出发，经过层层调用，最终还是回到了这里，有意思
+		 */
 		@Override
 		protected void inject(Object bean, @Nullable String beanName, @Nullable PropertyValues pvs) throws Throwable {
+			// 获取要注入的成员变量
 			Field field = (Field) this.member;
 			Object value;
+			// 如果成员变量的值先前缓存过
 			if (this.cached) {
+				// 从缓存中获取成员变量的值
 				value = resolvedCachedArgument(beanName, this.cachedFieldValue);
 			}
+			// 没有缓存
 			else {
+				// 创建一个成员变量的依赖描述符实例
 				DependencyDescriptor desc = new DependencyDescriptor(field, this.required);
+				// 给依赖描述符注册上宿主的实例Bean名字
 				desc.setContainingClass(bean.getClass());
 				Set<String> autowiredBeanNames = new LinkedHashSet<>(1);
 				Assert.state(beanFactory != null, "No BeanFactory available");
+				// 获取容器的类型转换器
+				// 默认是获取spring的SimpleTypeConverter，用来处理简单类型的转换
 				TypeConverter typeConverter = beanFactory.getTypeConverter();
 				try {
+					// 获取注入的值
 					value = beanFactory.resolveDependency(desc, beanName, autowiredBeanNames, typeConverter);
 				}
 				catch (BeansException ex) {
 					throw new UnsatisfiedDependencyException(null, beanName, new InjectionPoint(field), ex);
 				}
 				synchronized (this) {
+					// 如果成员变量的值没有缓存
 					if (!this.cached) {
+						// 成员变量的值不为null，并且required属性为true
 						if (value != null || this.required) {
 							this.cachedFieldValue = desc;
+							// 为指定Bean注册依赖Bean
 							registerDependentBeans(beanName, autowiredBeanNames);
 							if (autowiredBeanNames.size() == 1) {
 								String autowiredBeanName = autowiredBeanNames.iterator().next();
+								// 如果容器中有指定名称的Bean对象
 								if (beanFactory.containsBean(autowiredBeanName) &&
+										// 依赖对象类型和字段类型匹配，默认按类型注入
 										beanFactory.isTypeMatch(autowiredBeanName, field.getType())) {
+									// 创建一个依赖对象的引用，同时缓存
 									this.cachedFieldValue = new ShortcutDependencyDescriptor(
 											desc, autowiredBeanName, field.getType());
 								}
 							}
 						}
+						// 如果获取的依赖关系为null，且获取required属性为false
 						else {
+							// 将对应成员变量的值值的缓存设置为null
 							this.cachedFieldValue = null;
 						}
+						// 容器已经对当前成员变量的值进行缓存
 						this.cached = true;
 					}
 				}
 			}
+			// 如果字段值不为null
 			if (value != null) {
+				// 使用反射机制来赋值
 				ReflectionUtils.makeAccessible(field);
 				field.set(bean, value);
 			}

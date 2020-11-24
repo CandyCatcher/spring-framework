@@ -1474,6 +1474,9 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 	 * @return
 	 * @throws BeansException
 	 */
+	/*
+	依据依赖描述符的不同类型进行不同的处理
+	 */
 	@Override
 	@Nullable
 	public Object resolveDependency(DependencyDescriptor descriptor, @Nullable String requestingBeanName,
@@ -1503,6 +1506,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 					descriptor, requestingBeanName);
 			// 正常情况下进行
 			if (result == null) {
+				// 最终会来到这里，解析依赖
 				result = doResolveDependency(descriptor, requestingBeanName, autowiredBeanNames, typeConverter);
 			}
 			return result;
@@ -1529,12 +1533,17 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 		// 1.快速查找，根据名称查找。AutowiredAnnotationBeanPostProcessor 用到。
 		InjectionPoint previousInjectionPoint = ConstructorResolver.setCurrentInjectionPoint(descriptor);
 		try {
+			// 尝试从容器缓存里
 			Object shortcut = descriptor.resolveShortcut(this);
+			// 如果容器缓存中存在所需依赖，这里进行短路操作，提前结束依赖解析逻辑
 			if (shortcut != null) {
 				return shortcut;
 			}
 			// 2.注入指定值，QualifierAnnotationAutowireCandidateResolver解析@Value注解时会用到
+			// 从依赖描述符中获取目标实例的属性 是什么类
 			Class<?> type = descriptor.getDependencyType();
+			// 调用注解候选解析器尝试获取属性值
+			// 是获取@Value标签的值getAutowireCandidateResolver-findValue-
 			Object value = getAutowireCandidateResolver().getSuggestedValue(descriptor);
 
 			if (value != null) {
@@ -1655,7 +1664,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 	}
 
 	/**
-	 * 匹配多个，如果 type 是 Array、List、Map
+	 * 匹配多个，如果 type 是复合类型的成员变量进行解析处理 Array、List、Map
 	 */
 	//TODO 这个方法留待以后解决
 	@Nullable
@@ -1666,7 +1675,11 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 
 		// 可以看到不管是那种类型，对bean的搜寻都是放在了findAutowireCandidates方法中
 
+		/*
+		stream类型的处理
+		 */
 		if (descriptor instanceof StreamDependencyDescriptor) {
+			// 无论是什么类型都会调用findAutowireCandidates方法获取候选者
 			Map<String, Object> matchingBeans = findAutowireCandidates(beanName, type, descriptor);
 			if (autowiredBeanNames != null) {
 				autowiredBeanNames.addAll(matchingBeans.keySet());
@@ -1680,6 +1693,9 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 			return stream;
 		}
 		// 如果依赖的类型是数组
+		/*
+		数组类型的处理
+		 */
 		else if (type.isArray()) {
 			Class<?> componentType = type.getComponentType();
 			ResolvableType resolvableType = descriptor.getResolvableType();
@@ -1708,6 +1724,9 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 			}
 			return result;
 		}
+		/*
+		集合类型
+		 */
 		else if (Collection.class.isAssignableFrom(type) && type.isInterface()) {
 			Class<?> elementType = descriptor.getResolvableType().asCollection().resolveGeneric();
 			if (elementType == null) {
@@ -1733,6 +1752,9 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 			}
 			return result;
 		}
+		/*
+		Map类型
+		 */
 		else if (Map.class == type) {
 			ResolvableType mapType = descriptor.getResolvableType().asMap();
 			Class<?> keyType = mapType.resolveGeneric(0);
