@@ -1507,6 +1507,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 			// 正常情况下进行
 			if (result == null) {
 				// 最终会来到这里，解析依赖
+				// 执行完就能获取到属性对应的实例了
 				result = doResolveDependency(descriptor, requestingBeanName, autowiredBeanNames, typeConverter);
 			}
 			return result;
@@ -1588,6 +1589,10 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 			// 需要注意的是，这里返回的既有可能是对象，也有可能是对象的类型
 			// 这是因为到这里还不能明确的确定当前bean到底依赖的是哪一个bean？
 			// 所以如果只会返回这个依赖的类型以及对应名称，最后还需要调用getBean(beanName)
+
+			/*
+			如果标识@Autowired注解的属性是非复合类型的，从这个方法获取@Autowired里的值
+			 */
 			Map<String, Object> matchingBeans = findAutowireCandidates(beanName, type, descriptor);
 			// 没有匹配到
 			// 并且如果 autowire 的 require 属性为true
@@ -1602,7 +1607,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 			String autowiredBeanName;
 			Object instanceCandidate;
 
-			// 根据类型匹配到的数量大于 1个
+			// 如果类型匹配到的数量大于 1个，则要选择出最佳候选者
 			if (matchingBeans.size() > 1) {
 				// 确定自动注入的beanName
 				// 通过 determineAutowireCandidate() 方法来确定注入 Bean的名称。
@@ -1633,7 +1638,10 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 				// We have exactly one match.
 				// 只有一个对应的时候简单
 				Map.Entry<String, Object> entry = matchingBeans.entrySet().iterator().next();
+				// 在这里就能直接获取到
+				// 属性名
 				autowiredBeanName = entry.getKey();
+				// 属性名对应的class对象
 				instanceCandidate = entry.getValue();
 			}
 
@@ -1642,6 +1650,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 			}
 			// 前面已经说过了，这里可能返回的是Bean的类型，所以需要进一步调用getBean
 			if (instanceCandidate instanceof Class) {
+				// 在这里解析class实例了
 				instanceCandidate = descriptor.resolveCandidate(autowiredBeanName, type, this);
 			}
 			// 做一些检查，如果依赖是必须的，查找出来的依赖是一个null,那么报错
@@ -1679,7 +1688,12 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 		stream类型的处理
 		 */
 		if (descriptor instanceof StreamDependencyDescriptor) {
-			// 无论是什么类型都会调用findAutowireCandidates方法获取候选者
+			/*
+			 无论是什么类型都会调用findAutowireCandidates方法获取候选者列表
+			 为什么呢？
+			 因为按照@Autowired这种以类型优先查找的可能匹配到多个符合的类型
+			 这个方法就是按照一定的规则去匹配多个候选者
+			 */
 			Map<String, Object> matchingBeans = findAutowireCandidates(beanName, type, descriptor);
 			if (autowiredBeanNames != null) {
 				autowiredBeanNames.addAll(matchingBeans.keySet());
@@ -1836,15 +1850,23 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 		// 简单来说，这里就是到容器中查询requiredType类型的所有bean的名称的集合
 		// 这里会根据descriptor.isEager()来决定是否要匹配factoryBean类型的Bean
 		// 如果isEager()为true,那么会匹配factoryBean，反之，不会
+
+		/*
+		还是先尝试从容器里获取符合该属性的候选名单
+		 */
 		String[] candidateNames = BeanFactoryUtils.beanNamesForTypeIncludingAncestors(
 				this, requiredType, true, descriptor.isEager());
-
 
 		Map<String, Object> result = CollectionUtils.newLinkedHashMap(candidateNames.length);
 
 		// 第一步会到resolvableDependencies这个集合中查询是否已经存在了解析好的依赖（这里放的应该是已经缓存的
 		// 像我们之所以能够直接在Bean中注入applicationContext对象
 		// 就是因为Spring之前就将这个对象放入了resolvableDependencies集合中
+
+		/*
+		从缓存里已经保存的依赖关系寻找有没有注入过目标类的依赖 girlFriend的依赖
+		如果有直接返回
+		 */
 		for (Map.Entry<Class<?>, Object> classObjectEntry : this.resolvableDependencies.entrySet()) {
 			Class<?> autowiringType = classObjectEntry.getKey();
 
@@ -1868,6 +1890,9 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 			}
 		}
 
+		/*
+		遍历候选列表，过滤一些不符合的bean，比如依赖自己的，还要看看是否是支持注入的
+		 */
 		// 接下来开始对之前查找出来的类型匹配的所有BeanName进行处理
 		for (String candidate : candidateNames) {
 			// 不是自引用
@@ -1895,6 +1920,8 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 					addCandidateEntry(result, candidate, descriptor, requiredType);
 				}
 			}
+			// 一般执行完result会有值的
+			// 如果没有找到就会降级处理，去看看父类什么的
 			if (result.isEmpty() && !multiple) {
 				// Consider self references as a final pass...
 				// but in the case of a dependency collection, not the very same bean itself.
@@ -1957,15 +1984,25 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 	@Nullable
 	protected String determineAutowireCandidate(Map<String, Object> candidates, DependencyDescriptor descriptor) {
 		Class<?> requiredType = descriptor.getDependencyType();
+		// 首先先看候选bean有没有被@primary注解标记，被标记的为最优解
 		String primaryCandidate = determinePrimaryCandidate(candidates, requiredType);
 		if (primaryCandidate != null) {
 			return primaryCandidate;
 		}
+		// 如果没有则看看有没有被@Order、@PriorityOrder标记 如果有则按照优先级最高的，也就是序号最小的
 		String priorityCandidate = determineHighestPriorityCandidate(candidates, requiredType);
 		if (priorityCandidate != null) {
 			return priorityCandidate;
 		}
 		// Fallback
+		/*
+		 如果还是没有那就退级去寻找合适的
+		 如果这个类型已经由Spring注册过依赖关系对，则直接使用注册的对象
+		 候选者集合时LinkedHashMap，有序的Map集合，容器注册的依赖对象位于LinkedHashMap的起始位置
+		 如果没有注册过此类型的依赖关系，则根据属性的名称来匹配
+		 如果属性名称和某个候选者的Bean名称或者别名一致，那么直接将该Bean作为最优解
+		 */
+
 		for (Map.Entry<String, Object> entry : candidates.entrySet()) {
 			String candidateName = entry.getKey();
 			Object beanInstance = entry.getValue();

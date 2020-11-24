@@ -690,7 +690,7 @@ public class AutowiredAnnotationBeanPostProcessor implements SmartInstantiationA
 				// 默认是获取spring的SimpleTypeConverter，用来处理简单类型的转换
 				TypeConverter typeConverter = beanFactory.getTypeConverter();
 				try {
-					// 获取注入的值
+					// 获取注入的值 属性名对应的实例
 					value = beanFactory.resolveDependency(desc, beanName, autowiredBeanNames, typeConverter);
 				}
 				catch (BeansException ex) {
@@ -728,7 +728,7 @@ public class AutowiredAnnotationBeanPostProcessor implements SmartInstantiationA
 			}
 			// 如果字段值不为null
 			if (value != null) {
-				// 使用反射机制来赋值
+				// 最后使用反射机制来赋值
 				ReflectionUtils.makeAccessible(field);
 				field.set(bean, value);
 			}
