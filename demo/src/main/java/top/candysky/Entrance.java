@@ -4,22 +4,28 @@ import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.context.support.FileSystemXmlApplicationContext;
+import top.candysky.controller.HelloController;
+import top.candysky.controller.HiController;
 import top.candysky.controller.WelcomeController;
 import top.candysky.dao.impl.BoyFriend;
 import top.candysky.dao.impl.Company;
 import top.candysky.dao.impl.Staff;
 import top.candysky.entity.User;
 import top.candysky.entity.factory.UserFactoryBean;
+import top.candysky.introduction.LittleUniverse;
 import top.candysky.service.WelcomeService;
 
 
 /**
  * 将配置文件读取到内存中，配置信息为Resource对象，解析为BeanDefinition，根据BeanDefinition中的信息将对象实例化，注册到容器中
+ * Spring是默认不开启AOP相关的注解逻辑的
  */
 
 // TODO @component和@Configuration的相同与不同
 @Configuration
+@EnableAspectJAutoProxy
 @ComponentScan("top.candysky")
 public class Entrance {
 	public static void main(String[] args) {
@@ -36,9 +42,9 @@ public class Entrance {
 		if (!bd.isAbstract() && bd.isSingleton() && !bd.isLazyInit())
 		 */
 		//执行的话，会报错，说明spring不支持构造器循环依赖的
-		Company company = (Company) context.getBean("company");
+		//Company company = (Company) context.getBean("company");
 		//执行的话，会报错，说明spring不支持protoype循环依赖的
-		BoyFriend boyFriend = (BoyFriend) context.getBean("boyFriend");
+		//BoyFriend boyFriend = (BoyFriend) context.getBean("boyFriend");
 		/*
 		解决循环依赖的关键在于三级缓存
 		三级缓存除了解决循环依赖，还解决了保持单例唯一性的问题。因为从缓存中取出的bean实例要保证是唯一的
@@ -85,6 +91,13 @@ public class Entrance {
 //		welcomeService.sayHello("success");
 		//WelcomeController welcomeController = (WelcomeController) context.getBean("welcomeController");
 		//welcomeController.handleRequest();
+
+		System.out.println("============================AOP登场================================");
+		//HelloController helloController = (HelloController) context.getBean("helloController");
+		HiController hiController = (HiController) context.getBean("hiController");
+		//hiController.handleRequest();
+		//helloController.handleRequest();
+		((LittleUniverse)hiController).burningUp();
 
 	}
 }
