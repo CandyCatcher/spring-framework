@@ -35,6 +35,10 @@ import org.springframework.lang.Nullable;
  * @since 2.0.3
  * @see InstantiationAwareBeanPostProcessorAdapter
  */
+
+/**
+ * 主要作用在bean的实例化过程中的，是InstantiationAwareBeanPostProcessor的扩展
+ */
 public interface SmartInstantiationAwareBeanPostProcessor extends InstantiationAwareBeanPostProcessor {
 
 	/**
@@ -45,6 +49,14 @@ public interface SmartInstantiationAwareBeanPostProcessor extends InstantiationA
 	 * @param beanName the name of the bean
 	 * @return the type of the bean, or {@code null} if not predictable
 	 * @throws org.springframework.beans.BeansException in case of errors
+	 */
+	/*
+	用来返回目标对象的最终类型(比如代理对象通过beanClass获取proxy type）
+	该方法是预测bean的类型的，会将预测出来的类型返回，如果不能预测，返回null。
+	相关的使用的场景是如果beanDefinition无法确定bean的类型的时候，就会调用这个方法确定类型
+	该方法主要是被AbstractAutowireCapableBeanFactory使用，在predictBeanType方法里，
+	会调用容器里所有已注册的SmartInstantiationAwareBeanPostProcessor的实现类的predictBeanType，只要有一个返回值不为null，
+	并且满足FactoryBean校验结果就直接返回
 	 */
 	@Nullable
 	default Class<?> predictBeanType(Class<?> beanClass, String beanName) throws BeansException {
@@ -58,6 +70,13 @@ public interface SmartInstantiationAwareBeanPostProcessor extends InstantiationA
 	 * @param beanName the name of the bean
 	 * @return the candidate constructors, or {@code null} if none specified
 	 * @throws org.springframework.beans.BeansException in case of errors
+	 */
+	/*
+	为bean选择合适的构造器
+	提供一个拓展点用来解析获取用来实例化的构造器（比如未通过bean定义构造器以及参数的情况下，会根据这个回调来确定构造器）
+	determineCandidateConstructors的执行时机，该方法同样是在AbstractAutowireCapableBeanFactory中被执行doCreateBean
+	调用createBeanInstance时调用。在createBeanInstance的方法中，经过层层判断，还没有找到确定的构造器，
+	就会调用determineConstructorsFromPostProcessor，依次调用determineCandidateConstructors，直到有返回值则返回
 	 */
 	@Nullable
 	default Constructor<?>[] determineCandidateConstructors(Class<?> beanClass, String beanName)
@@ -86,6 +105,14 @@ public interface SmartInstantiationAwareBeanPostProcessor extends InstantiationA
 	 * @return the object to expose as bean reference
 	 * (typically with the passed-in bean instance as default)
 	 * @throws org.springframework.beans.BeansException in case of errors
+	 */
+	/*
+	在解决setter方法循环调用时
+	获取要提前暴露的bean的引用，用来支持单例对象的循环引用（一般是bean自身，如果是代理对象则需要取用代理引用）
+	determineCandidateConstructors的执行时机，该方法同样是在AbstractAutowireCapableBeanFactory中被执行
+	执行doCreateBean调用addSingletonFactory时调用
+	AbstractAutowireCapableBeanFactory中有一同名的getEarlyBeanReference方法，在方法里，依次调用
+	SmartInstantiationAwareBeanPostProcessor实现类的getEarlyBeanReference方法，
 	 */
 	default Object getEarlyBeanReference(Object bean, String beanName) throws BeansException {
 		return bean;

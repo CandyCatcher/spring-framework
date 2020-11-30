@@ -35,6 +35,10 @@ import org.springframework.aop.TargetSource;
  * @since 13.03.2003
  * @see org.springframework.aop.framework.AdvisedSupport
  */
+/*
+被代理的bean
+提供了一些操作动态代理对象本身的方法
+ */
 public interface Advised extends TargetClassAware {
 
 	/**

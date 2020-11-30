@@ -35,6 +35,7 @@ import org.springframework.beans.factory.config.BeanPostProcessor;
  * @since 2.5
  * @see org.springframework.beans.factory.config.ConfigurableBeanFactory#getMergedBeanDefinition
  */
+//用来将merged BeanDefinition暴露出来
 public interface MergedBeanDefinitionPostProcessor extends BeanPostProcessor {
 
 	/**
@@ -43,6 +44,17 @@ public interface MergedBeanDefinitionPostProcessor extends BeanPostProcessor {
 	 * @param beanType the actual type of the managed bean instance
 	 * @param beanName the name of the bean
 	 * @see AbstractAutowireCapableBeanFactory#applyMergedBeanDefinitionPostProcessors
+	 */
+	/*
+	在bean实例化完毕后调用 可以用来修改merged BeanDefinition的一些properties 或者用来给后续回调中缓存一些meta信息使用
+	这个算是将merged BeanDefinition暴露出来的一个回调
+	重点关注AutowiredAnnotationBeanPostProcessor，该类会把@Autowired等标记的
+	需要依赖注入的成员变量或者方法实例给记录下来，方便后续populateBean使用
+
+	postProcessMergedBeanDefinition执行时机，该方法同样是在AbstractAutowireCapableBeanFactory中被执行doCreateBean
+	调用createBeanInstance之后，addSingleton方法执行之前，在applyMergedBeanDefinitionpostProcess中被调用。
+	该方法的经典实现是在AutowiredAnnotationBeanPostProcessor中，该方法主要是用来收集bean里面被@Autowired或者@Value标记的成员变量或者
+	方法实例，存到缓存中，为后续的依赖注入提供准备
 	 */
 	void postProcessMergedBeanDefinition(RootBeanDefinition beanDefinition, Class<?> beanType, String beanName);
 

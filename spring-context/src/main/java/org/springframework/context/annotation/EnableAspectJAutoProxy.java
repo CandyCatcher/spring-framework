@@ -119,12 +119,23 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
+/*
+spring通过注解将类当做Bean管理起来的方式
+1.@Controller、@Service、@Repository、@Component标记的类，再使用Component扫描包进行扫描，将对应的bean加载到容器中
+2.@Bean标记的方法，被标记方法返回的实例就会作为bean加载到容器中
+3.@Import标签 spring通过这种方式将基础服务类加载到容器中
+ */
 @Import(AspectJAutoProxyRegistrar.class)
 public @interface EnableAspectJAutoProxy {
 
 	/**
 	 * Indicate whether subclass-based (CGLIB) proxies are to be created as opposed
 	 * to standard Java interface-based proxies. The default is {@code false}.
+	 */
+	/*
+	 表明该类采用CGLIB代理还是使用JDK的动态代理
+	 true-CGLIB
+	 fale-尽可能使用JDK
 	 */
 	boolean proxyTargetClass() default false;
 
@@ -133,6 +144,12 @@ public @interface EnableAspectJAutoProxy {
 	 * for retrieval via the {@link org.springframework.aop.framework.AopContext} class.
 	 * Off by default, i.e. no guarantees that {@code AopContext} access will work.
 	 * @since 4.3.1
+	 */
+	/*
+	 是否可以将prox代理对象暴露出来
+	 解决内部调用不能使用代理的场景  默认为false表示不处理
+	 true则表示这个代理对象的副本就可以通过AopContext.currentProxy()获得（ThreadLocal里面），
+	 从而我们可以很方便得在Spring框架上下文中拿到当前代理对象（处理事务时很方便）
 	 */
 	boolean exposeProxy() default false;
 

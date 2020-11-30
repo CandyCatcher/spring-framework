@@ -36,6 +36,9 @@ import org.springframework.util.ObjectUtils;
  * @see AbstractAdvisingBeanPostProcessor
  * @see org.springframework.aop.framework.autoproxy.AbstractAutoProxyCreator
  */
+/*
+又是AOP的基础工具类，主要是为了后续的AutoProxyCreator集群提供公共方法的实现
+ */
 @SuppressWarnings("serial")
 public class ProxyProcessorSupport extends ProxyConfig implements Ordered, BeanClassLoaderAware, AopInfrastructureBean {
 
@@ -101,8 +104,15 @@ public class ProxyProcessorSupport extends ProxyConfig implements Ordered, BeanC
 	 * @param beanClass the class of the bean
 	 * @param proxyFactory the ProxyFactory for the bean
 	 */
+	/*
+	 最核心的方法
+	 这里决定了如果目标类没有实现接口直接就是Cglib代理
+	 检查给定beanClass上的接口们，并收集合法的接口交给proxyFactory处理
+	 */
 	protected void evaluateProxyInterfaces(Class<?> beanClass, ProxyFactory proxyFactory) {
+		// 找到该类实现的所有接口们
 		Class<?>[] targetInterfaces = ClassUtils.getAllInterfacesForClass(beanClass, getProxyClassLoader());
+		// 标记：是否有存在合理的接口
 		boolean hasReasonableProxyInterface = false;
 		for (Class<?> ifc : targetInterfaces) {
 			if (!isConfigurationCallbackInterface(ifc) && !isInternalLanguageInterface(ifc) &&
@@ -113,6 +123,7 @@ public class ProxyProcessorSupport extends ProxyConfig implements Ordered, BeanC
 		}
 		if (hasReasonableProxyInterface) {
 			// Must allow for introductions; can't just set interfaces to the target's interfaces only.
+			// 不管接口是否合理，都将其添加进去
 			for (Class<?> ifc : targetInterfaces) {
 				proxyFactory.addInterface(ifc);
 			}
@@ -130,6 +141,10 @@ public class ProxyProcessorSupport extends ProxyConfig implements Ordered, BeanC
 	 * @param ifc the interface to check
 	 * @return whether the given interface is just a container callback
 	 */
+	/*
+	 判断此接口类型是否属于：容器去回调的类型，这里例举处理一些接口 初始化、
+	 销毁、自动刷新、自动关闭、Aware感知等等
+	 */
 	protected boolean isConfigurationCallbackInterface(Class<?> ifc) {
 		return (InitializingBean.class == ifc || DisposableBean.class == ifc || Closeable.class == ifc ||
 				AutoCloseable.class == ifc || ObjectUtils.containsElement(ifc.getInterfaces(), Aware.class));
@@ -142,6 +157,9 @@ public class ProxyProcessorSupport extends ProxyConfig implements Ordered, BeanC
 	 * proxied with its full target class, assuming that as the user's intention.
 	 * @param ifc the interface to check
 	 * @return whether the given interface is an internal language interface
+	 */
+	/*
+	是否是如下通用的接口。若实现的是这些接口也会排除
 	 */
 	protected boolean isInternalLanguageInterface(Class<?> ifc) {
 		return (ifc.getName().equals("groovy.lang.GroovyObject") ||

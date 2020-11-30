@@ -33,6 +33,9 @@ import org.aopalliance.aop.Advice;
  * @author Rod Johnson
  * @author Juergen Hoeller
  */
+/*
+SpringAOP将一个ServiceAspect中多个pointcut和advise一一对应起来。转换为Advisor
+ */
 public interface Advisor {
 
 	/**

@@ -97,6 +97,9 @@ public abstract class AopConfigUtils {
 	public static BeanDefinition registerAspectJAnnotationAutoProxyCreatorIfNecessary(
 			BeanDefinitionRegistry registry, @Nullable Object source) {
 
+		/*
+		AnnotationAwareAspectJAutoProxyCreator.class是springAOP默认主流的支持注解形式的动态代理创建器
+		 */
 		return registerOrEscalateApcAsRequired(AnnotationAwareAspectJAutoProxyCreator.class, registry, source);
 	}
 
@@ -119,7 +122,11 @@ public abstract class AopConfigUtils {
 			Class<?> cls, BeanDefinitionRegistry registry, @Nullable Object source) {
 
 		Assert.notNull(registry, "BeanDefinitionRegistry must not be null");
-
+		/*
+		 先看一下registry有没有注册过AutoProxyCreator类型的BeanDefinition实例
+		 如果已经存在了自动代理创建器且存在的自动代理创建器类名与先前传入的AutoProxyCreator不一致(一般除非用户自定义，基本上不会有)
+		 就需要根据优先级来判断到底需要使用哪个
+		 */
 		if (registry.containsBeanDefinition(AUTO_PROXY_CREATOR_BEAN_NAME)) {
 			BeanDefinition apcDefinition = registry.getBeanDefinition(AUTO_PROXY_CREATOR_BEAN_NAME);
 			if (!cls.getName().equals(apcDefinition.getBeanClassName())) {
@@ -131,10 +138,13 @@ public abstract class AopConfigUtils {
 			}
 			return null;
 		}
-
+		//一般都是直接来这里，若用户自己没有定义，那就用默认的AnnotationAwareAspectJAutoProxyCreator
 		RootBeanDefinition beanDefinition = new RootBeanDefinition(cls);
+		// source=null
 		beanDefinition.setSource(source);
+		// order，设置上最高的优先级
 		beanDefinition.getPropertyValues().add("order", Ordered.HIGHEST_PRECEDENCE);
+		// 使用的是spring默认的AutoProxyCreator，所以将角色定义为基础服务
 		beanDefinition.setRole(BeanDefinition.ROLE_INFRASTRUCTURE);
 		registry.registerBeanDefinition(AUTO_PROXY_CREATOR_BEAN_NAME, beanDefinition);
 		return beanDefinition;

@@ -44,6 +44,12 @@ import org.springframework.lang.Nullable;
  * @see org.springframework.aop.framework.autoproxy.AbstractAutoProxyCreator#setCustomTargetSourceCreators
  * @see org.springframework.aop.framework.autoproxy.target.LazyInitTargetSourceCreator
  */
+
+/**
+ * 主要作用是在bean的实例化过程中给bean加上额外的逻辑
+ * 实例化是bean初始化之前、也就是bean被赋值上属性之前
+ * 执行完这里面的再执行BeanPostProcessor
+ */
 public interface InstantiationAwareBeanPostProcessor extends BeanPostProcessor {
 
 	/**
@@ -70,6 +76,18 @@ public interface InstantiationAwareBeanPostProcessor extends BeanPostProcessor {
 	 * @see org.springframework.beans.factory.support.AbstractBeanDefinition#getBeanClass()
 	 * @see org.springframework.beans.factory.support.AbstractBeanDefinition#getFactoryMethodName()
 	 */
+	/*
+	用来在对象实例化前直接返回一个对象（如代理对象）来代替通过内置的实例化流程创建对象
+	这个时候bean还没有实例化，所以这个方法的Object返回值可以替代原来需要创建出来的bean
+	如果该方法出现返回值，就意味着原来的bean被掉包了，既然被掉包了，意味着bean在执行常规流程去创建之前已经被这个方法提前创建出来了，
+	因此原本后续bean的创建流程法就不用走了，转而直接调用BeanPostProcessor的postProcessafterInstantiation方法
+
+	postProcessBeforeInstantiation的执行时机，该方法同样是在AbstractAutowireCapableBeanFactory中被调用的
+	在执行doCreateBean方法之前，也就是在创建bean实例之前，会调用resolveBeforeInstantiation方法，在这个方法里，
+	会看容器有没有注册过InstantiationAwareBeanPostProcessor，如果有，则挨个调用postProcessBeforeInstantiation方法，
+	直到某个实现类返回的结果不为null，这说明bean的实例已经被自定义的后置处理器创建了，不需要spring进行后续的doCreateBean了
+
+	 */
 	@Nullable
 	default Object postProcessBeforeInstantiation(Class<?> beanClass, String beanName) throws BeansException {
 		return null;
@@ -89,6 +107,16 @@ public interface InstantiationAwareBeanPostProcessor extends BeanPostProcessor {
 	 * instances being invoked on this bean instance.
 	 * @throws org.springframework.beans.BeansException in case of errors
 	 * @see #postProcessBeforeInstantiation
+	 */
+	/*
+	在对象实例化完毕执行populateBean（设置属性值）之前， 如果返回false则spring不再对对应的bean实例进行自动依赖注入
+	用来判断是否执行对属性值的设置，默认是true
+
+	postProcessAfterInstantiation的执行时机，该方法同样是在AbstractAutowireCapableBeanFactory中被调用的
+	在popilateBean方法里，在对bean的属性真正的赋值之前，
+	会先去依次地执行InstantiationAwareBeanPostProcessor的postProcessAfterInstantiation方法，此时如果我们不希望spring对某些bean
+	中的属性依赖注入，而是加入我们自定义的逻辑来处理这些bean，可以把相关的逻辑加入到这里来，处理完成后，对该bean返回false即可，返回false之后
+	populateBean的属性依赖注入逻辑就不会执行了
 	 */
 	default boolean postProcessAfterInstantiation(Object bean, String beanName) throws BeansException {
 		return true;
@@ -111,6 +139,16 @@ public interface InstantiationAwareBeanPostProcessor extends BeanPostProcessor {
 	 * @throws org.springframework.beans.BeansException in case of errors
 	 * @since 5.1
 	 * @see #postProcessPropertyValues
+	 */
+	/*
+	这里是在spring处理完默认的成员属性，应用到指定的bean之前进行回调，可以用来检查和修改属性，最终返回的PropertyValues会应用到bean中
+	@Autowired、@Resource等就是根据这个回调来实现最终注入依赖的属性的。
+
+	这个方法的细粒度更为精细，是对bean的某些属性进行处理。
+	postProcessProperties的执行时机，该方法同样是在AbstractAutowireCapableBeanFactory中populateBean方法被调用的，
+	在postProcessAfterInstantiation执行之后，postProcessProperties的应用场景是比较多的，
+	一个比较经典的地方是在AutowiredAnnotationBeanPostProcessor，在实现方法里面，主要是根据先前被解析出来的bean里面的被@Autowired
+	标记的成员变量，讲成员变量对应的bean实例注入到目标成员变量里
 	 */
 	@Nullable
 	default PropertyValues postProcessProperties(PropertyValues pvs, Object bean, String beanName)
@@ -138,6 +176,9 @@ public interface InstantiationAwareBeanPostProcessor extends BeanPostProcessor {
 	 * @see #postProcessProperties
 	 * @see org.springframework.beans.MutablePropertyValues
 	 * @deprecated as of 5.1, in favor of {@link #postProcessProperties(PropertyValues, Object, String)}
+	 */
+	/*
+	postProcessPropertyValues已经被标注@Deprecated，被postProcessProperties取代了
 	 */
 	@Deprecated
 	@Nullable

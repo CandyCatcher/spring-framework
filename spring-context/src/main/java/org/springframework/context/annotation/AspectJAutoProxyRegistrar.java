@@ -38,18 +38,29 @@ class AspectJAutoProxyRegistrar implements ImportBeanDefinitionRegistrar {
 	 * of the @{@link EnableAspectJAutoProxy#proxyTargetClass()} attribute on the importing
 	 * {@code @Configuration} class.
 	 */
+	/*
+	AnnotationMetadata：主要是用来保存或操作注解相关信息的，是spring注解底层原理依赖的接口，还可以用来判断容器是否有存在指定的注解
+	BeanDefinitionRegistry：主要是用来往容器注册BeanDefinition的
+	 */
 	@Override
 	public void registerBeanDefinitions(
 			AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) {
-
+		// 向容器注册了一个基于注解的自动代理创建器
+		// 类似自研框架的proxyCreator
+		// 什么时候调用的?
+		// refresh()方法->AbstractApplicationContext的invokeBeanFactoryPostProcessors->
 		AopConfigUtils.registerAspectJAnnotationAutoProxyCreatorIfNecessary(registry);
 
+		// 通过AnnotationConfigUtils注解工具类查找EnableAspectJAutoProxy注解的配置
 		AnnotationAttributes enableAspectJAutoProxy =
 				AnnotationConfigUtils.attributesFor(importingClassMetadata, EnableAspectJAutoProxy.class);
+		// 解析@EnableAspectJAutoProxy的两个属性，并给已注册的AutoProxyCreator设置上属性值
 		if (enableAspectJAutoProxy != null) {
+			//表示强制指定了要使用CGLIB
 			if (enableAspectJAutoProxy.getBoolean("proxyTargetClass")) {
 				AopConfigUtils.forceAutoProxyCreatorToUseClassProxying(registry);
 			}
+			//表示强制暴露Bean的代理对象到AopContext
 			if (enableAspectJAutoProxy.getBoolean("exposeProxy")) {
 				AopConfigUtils.forceAutoProxyCreatorToExposeProxy(registry);
 			}

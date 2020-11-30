@@ -475,12 +475,28 @@ public class AdvisedSupport extends ProxyConfig implements Advised {
 	 * @param targetClass the target class
 	 * @return a List of MethodInterceptors (may also include InterceptorAndDynamicMethodMatchers)
 	 */
+	/*
+	该方法主要用来获取被代理方法实例对应有效的拦截器链，
+	可能存在多个切面匹配同一个bean的某个方法
+	我们使用的是通过一个列表对Aspect进行排序，遍历执行横切逻辑方法
+	SpringAOP则是通过递归的方式执行的，递归就意味着使用调用链
+	这个方法就是用来创建调用链的
+	将之前注入到advisorChain中的advisors转换为MethodInterceptor
+	和InterceptorAndDynamicMethodMatcher集合
+
+	这也就说明了通过Advised接口为什么能够动态增减Advicer
+	AdvisedSupport本身不提供任何创建动态代理的方法，只是专注于生成拦截器链
+	然后委托给ProxyCreatorSupport去创建代理对象
+	 */
 	public List<Object> getInterceptorsAndDynamicInterceptionAdvice(Method method, @Nullable Class<?> targetClass) {
 		MethodCacheKey cacheKey = new MethodCacheKey(method);
+		//尝试从缓存获取
 		List<Object> cached = this.methodCache.get(cacheKey);
 		if (cached == null) {
+			//缓存没有，则尝试通过advisorChainFactory去创建调用链
 			cached = this.advisorChainFactory.getInterceptorsAndDynamicInterceptionAdvice(
 					this, method, targetClass);
+			//将获取到的结果加入到缓存中
 			this.methodCache.put(cacheKey, cached);
 		}
 		return cached;

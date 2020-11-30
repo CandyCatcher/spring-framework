@@ -40,6 +40,10 @@ package org.springframework.core;
  * @see org.springframework.core.annotation.Order
  * @see org.springframework.core.annotation.AnnotationAwareOrderComparator
  */
+/*
+值最小的优先级最高
+AbstractAutoProxyCreator是优先级最高的动态代理创建器
+ */
 public interface Ordered {
 
 	/**

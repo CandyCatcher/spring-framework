@@ -97,11 +97,14 @@ public class ProxyCreatorSupport extends AdvisedSupport {
 	/**
 	 * Subclasses should call this to get a new AOP proxy. They should <b>not</b>
 	 * create an AOP proxy with {@code this} as an argument.
+	 * 最重要的方法
 	 */
 	protected final synchronized AopProxy createAopProxy() {
 		if (!this.active) {
+			// 主要是为了激活AdvisedSupportListener监听器
 			activate();
 		}
+		// 还是要委托给 AOP代理工厂根据实际情况生成代理对象
 		return getAopProxyFactory().createAopProxy(this);
 	}
 

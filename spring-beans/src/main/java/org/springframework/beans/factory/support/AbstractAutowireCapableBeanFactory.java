@@ -442,6 +442,9 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		return result;
 	}
 
+	/*
+	 * 在这里对后置处理器创建出来的bean进行包装
+	 */
 	@Override
 	public Object applyBeanPostProcessorsAfterInitialization(Object existingBean, String beanName)
 			throws BeansException {
@@ -450,6 +453,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		for (BeanPostProcessor processor : getBeanPostProcessors()) {
 			// postProcessAfterInitialization的实现类
 			/*
+			spring在这里认为bean的初始化已经完成了，那么就要进行初始化完成后的后置逻辑
 			对bean做后置处理
 			这里很关键，是Spring处理AOP的入口
 			 */
@@ -516,6 +520,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		// clone the bean definition in case of a dynamically resolved Class
 		// which cannot be stored in the shared merged bean definition.
 		// 判断需要创建的Bean是否可以实例化，即是否可以通过当前的类加载器加载
+		// 在这里解析BeanDefinition，得到bean对应的class对象
 		Class<?> resolvedClass = resolveBeanClass(mbd, beanName);
 		if (resolvedClass != null && !mbd.hasBeanClass() && mbd.getBeanClassName() != null) {
 			// 克隆一份BeanDefinition，用来设置上加载出来的class对象

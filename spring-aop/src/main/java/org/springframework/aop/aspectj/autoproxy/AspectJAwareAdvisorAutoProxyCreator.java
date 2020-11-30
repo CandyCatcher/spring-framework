@@ -50,6 +50,7 @@ public class AspectJAwareAdvisorAutoProxyCreator extends AbstractAdvisorAutoProx
 
 
 	/**
+	 * 重写了排序
 	 * Sort the supplied {@link Advisor} instances according to AspectJ precedence.
 	 * <p>If two pieces of advice come from the same aspect, they will have the same
 	 * order. Advice from the same aspect is then further ordered according to the
@@ -95,9 +96,13 @@ public class AspectJAwareAdvisorAutoProxyCreator extends AbstractAdvisorAutoProx
 		AspectJProxyUtils.makeAdvisorChainAspectJCapableIfNecessary(candidateAdvisors);
 	}
 
+	/*
+	该方法主要是从容器里发现切面类，并将切面类解析成一个个Advisor
+	 */
 	@Override
 	protected boolean shouldSkip(Class<?> beanClass, String beanName) {
 		// TODO: Consider optimization by caching the list of the aspect names
+		// 找到候选Advisor，其中一个实现方法就是子类去实现
 		List<Advisor> candidateAdvisors = findCandidateAdvisors();
 		for (Advisor advisor : candidateAdvisors) {
 			if (advisor instanceof AspectJPointcutAdvisor &&

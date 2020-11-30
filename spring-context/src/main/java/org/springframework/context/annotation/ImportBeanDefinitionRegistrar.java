@@ -58,6 +58,9 @@ import org.springframework.core.type.AnnotationMetadata;
  * @see ImportSelector
  * @see Configuration
  */
+/*
+看名字就能确定是对额外的BeanDefinition进行注册的
+ */
 public interface ImportBeanDefinitionRegistrar {
 
 	/**

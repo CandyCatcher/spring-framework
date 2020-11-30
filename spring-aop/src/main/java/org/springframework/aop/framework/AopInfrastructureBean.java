@@ -26,6 +26,13 @@ package org.springframework.aop.framework;
  * @see org.springframework.aop.framework.autoproxy.AbstractAutoProxyCreator
  * @see org.springframework.aop.scope.ScopedProxyFactoryBean
  */
+/*
+ 免被AOP代理的标记接口.若Bean实现了此接口，表明它是一个Spring AOP的基础类，
+ 那么这个类是不会被AOP给代理的，即便它匹配pointcut表达式
+ 一般没有方法的接口，作用就是标记的
+ 实现了该接口的bean即使实现了pointcut表达式也是不会通过SpringAOP表达式处理的、
+ 这些bean会被当做SpringAOP的基础服务类来处理
+ */
 public interface AopInfrastructureBean {
 
 }
