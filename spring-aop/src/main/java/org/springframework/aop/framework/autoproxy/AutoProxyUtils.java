@@ -65,6 +65,11 @@ public abstract class AutoProxyUtils {
 	 * @param beanName the name of the bean
 	 * @return whether the given bean should be proxied with its target class
 	 */
+	/*
+	方法主要是试图从被代理bean的BeanDefinition里面去获取PRESERVE_TARGET_CLASS_ATTRIBUTE的属性值
+	这里是看看用户先前有咩有将属性值设置为true，如果为true，则表明对被代理的bean而言，需要将PRESERVE_TARGET_CLASS设置为true
+	即使用CGLIB动态代理
+	 */
 	public static boolean shouldProxyTargetClass(
 			ConfigurableListableBeanFactory beanFactory, @Nullable String beanName) {
 
@@ -126,6 +131,7 @@ public abstract class AutoProxyUtils {
 	 * @see AutowireCapableBeanFactory#ORIGINAL_INSTANCE_SUFFIX
 	 */
 	static boolean isOriginalInstance(String beanName, Class<?> beanClass) {
+		// .ORIGINAL
 		if (!StringUtils.hasLength(beanName) || beanName.length() !=
 				beanClass.getName().length() + AutowireCapableBeanFactory.ORIGINAL_INSTANCE_SUFFIX.length()) {
 			return false;

@@ -58,6 +58,10 @@ public interface AdvisorAdapter {
 	 * no need to cache instances for efficiency, as the AOP framework
 	 * caches advice chains.
 	 */
+	/*
+	为了将SpringAOP和其它的Interceptor打通
+	毕竟Interceptor是Spring创建的
+	 */
 	MethodInterceptor getInterceptor(Advisor advisor);
 
 }

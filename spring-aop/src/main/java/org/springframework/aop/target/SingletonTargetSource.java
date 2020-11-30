@@ -35,13 +35,19 @@ import org.springframework.util.ObjectUtils;
  * @author Juergen Hoeller
  * @see org.springframework.aop.framework.AdvisedSupport#setTarget(Object)
  */
+
+/**
+ * 顾名思义，是确保被代理对象是单例的
+ */
 public class SingletonTargetSource implements TargetSource, Serializable {
 
 	/** use serialVersionUID from Spring 1.2 for interoperability. */
 	private static final long serialVersionUID = 9031246629662423738L;
 
 
-	/** Target cached and invoked using reflection. */
+	/** Target cached and invoked using reflection.
+	 * 相关的代理对象会被缓存到这个target对象里
+	 * */
 	private final Object target;
 
 
@@ -60,6 +66,7 @@ public class SingletonTargetSource implements TargetSource, Serializable {
 		return this.target.getClass();
 	}
 
+	// 调用，每次返回的都是一个target对象
 	@Override
 	public Object getTarget() {
 		return this.target;

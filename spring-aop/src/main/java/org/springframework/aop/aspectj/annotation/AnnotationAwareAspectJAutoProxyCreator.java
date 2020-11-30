@@ -94,11 +94,16 @@ public class AnnotationAwareAspectJAutoProxyCreator extends AspectJAwareAdvisorA
 	protected List<Advisor> findCandidateAdvisors() {
 		// Add all the Spring advisors found according to superclass rules.
 		// 使用注解方式配置AOP的时候还是能够支持对XML配置的AOP的支持的
+		// 还会再从容器里获取Advisors
 		List<Advisor> advisors = super.findCandidateAdvisors();
 		// Build Advisors for all AspectJ aspects in the bean factory.
 		if (this.aspectJAdvisorsBuilder != null) {
+			// 再和自身的Advisor做合并
+			// 这么操作是因为AnnotationAwareAspectJAutoProxyCreator只负责处理获取被注解标记的切面类
+			// 为了支持对XML或者接口实现的切面类配置，需要使用父类的功能
 			advisors.addAll(this.aspectJAdvisorsBuilder.buildAspectJAdvisors());
 		}
+		// 获取到容器里面所有的Advisor
 		return advisors;
 	}
 
@@ -112,6 +117,7 @@ public class AnnotationAwareAspectJAutoProxyCreator extends AspectJAwareAdvisorA
 		// proxied by that interface and fail at runtime as the advice method is not
 		// defined on the interface. We could potentially relax the restriction about
 		// not advising aspects in the future.
+		// 前面判断beanClass是否显式地继承了AOP的接口，后面那段类上面是否是标记了与AOP相关的的注解
 		return (super.isInfrastructureClass(beanClass) ||
 				(this.aspectJAdvisorFactory != null && this.aspectJAdvisorFactory.isAspect(beanClass)));
 	}

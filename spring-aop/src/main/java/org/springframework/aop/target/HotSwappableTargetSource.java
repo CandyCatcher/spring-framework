@@ -85,6 +85,8 @@ public class HotSwappableTargetSource implements TargetSource, Serializable {
 	 * @param newTarget the new target object
 	 * @return the old target object
 	 * @throws IllegalArgumentException if the new target is invalid
+	 *
+	 * 热交换服务是通过这个方法实现的
 	 */
 	public synchronized Object swap(Object newTarget) throws IllegalArgumentException {
 		Assert.notNull(newTarget, "Target object must not be null");

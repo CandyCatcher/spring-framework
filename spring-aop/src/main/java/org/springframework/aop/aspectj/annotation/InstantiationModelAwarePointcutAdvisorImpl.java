@@ -84,16 +84,25 @@ final class InstantiationModelAwarePointcutAdvisorImpl
 			Method aspectJAdviceMethod, AspectJAdvisorFactory aspectJAdvisorFactory,
 			MetadataAwareAspectInstanceFactory aspectInstanceFactory, int declarationOrder, String aspectName) {
 
+		//当前的Pointcut表达式
 		this.declaredPointcut = declaredPointcut;
+		//切面的class对象
 		this.declaringClass = aspectJAdviceMethod.getDeclaringClass();
+		//切面方法的名称
 		this.methodName = aspectJAdviceMethod.getName();
+		//切面方法的参数类型
 		this.parameterTypes = aspectJAdviceMethod.getParameterTypes();
+		//切面方法对象
 		this.aspectJAdviceMethod = aspectJAdviceMethod;
+		//aspectj的Advisor工厂
 		this.aspectJAdvisorFactory = aspectJAdvisorFactory;
+		//aspect的实例工厂
 		this.aspectInstanceFactory = aspectInstanceFactory;
+		//切面的顺序
 		this.declarationOrder = declarationOrder;
+		//切面的名称
 		this.aspectName = aspectName;
-
+		//判断当前的切面对象是否需要延时加载
 		if (aspectInstanceFactory.getAspectMetadata().isLazilyInstantiated()) {
 			// Static part of the pointcut is a lazy type.
 			Pointcut preInstantiationPointcut = Pointcuts.union(
@@ -102,6 +111,7 @@ final class InstantiationModelAwarePointcutAdvisorImpl
 			// Make it dynamic: must mutate from pre-instantiation to post-instantiation state.
 			// If it's not a dynamic pointcut, it may be optimized out
 			// by the Spring AOP infrastructure after the first evaluation.
+			// 保存到缓存中
 			this.pointcut = new PerTargetInstantiationModelPointcut(
 					this.declaredPointcut, preInstantiationPointcut, aspectInstanceFactory);
 			this.lazy = true;
@@ -110,6 +120,7 @@ final class InstantiationModelAwarePointcutAdvisorImpl
 			// A singleton aspect.
 			this.pointcut = this.declaredPointcut;
 			this.lazy = false;
+			//将切面中的通知构造为advice通知对象
 			this.instantiatedAdvice = instantiateAdvice(this.declaredPointcut);
 		}
 	}
@@ -146,6 +157,7 @@ final class InstantiationModelAwarePointcutAdvisorImpl
 	}
 
 	private Advice instantiateAdvice(AspectJExpressionPointcut pointcut) {
+		// 通过这个方法获取Method实例对应的Advice实例
 		Advice advice = this.aspectJAdvisorFactory.getAdvice(this.aspectJAdviceMethod, pointcut,
 				this.aspectInstanceFactory, this.declarationOrder, this.aspectName);
 		return (advice != null ? advice : EMPTY_ADVICE);

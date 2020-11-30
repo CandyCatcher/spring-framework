@@ -110,6 +110,7 @@ public class AspectJAwareAdvisorAutoProxyCreator extends AbstractAdvisorAutoProx
 				return true;
 			}
 		}
+		//
 		return super.shouldSkip(beanClass, beanName);
 	}
 

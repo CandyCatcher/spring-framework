@@ -37,6 +37,7 @@ public class PrototypeTargetSource extends AbstractPrototypeBasedTargetSource {
 	/**
 	 * Obtain a new prototype instance for every call.
 	 * @see #newPrototypeInstance()
+	 * 每次被调用的时候都会返回一个新的代理对象实例
 	 */
 	@Override
 	public Object getTarget() throws BeansException {

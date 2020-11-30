@@ -80,6 +80,7 @@ public class CommonsPool2TargetSource extends AbstractPoolingTargetSource implem
 
 	/**
 	 * The Apache Commons {@code ObjectPool} used to pool target objects.
+	 * 这里会维护一个内存池，用来池化targetSource
 	 */
 	@Nullable
 	private ObjectPool pool;

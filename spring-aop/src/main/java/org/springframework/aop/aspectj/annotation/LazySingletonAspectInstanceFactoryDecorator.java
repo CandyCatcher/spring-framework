@@ -42,17 +42,22 @@ public class LazySingletonAspectInstanceFactoryDecorator implements MetadataAwar
 	 * @param maaif the MetadataAwareAspectInstanceFactory to decorate
 	 */
 	public LazySingletonAspectInstanceFactoryDecorator(MetadataAwareAspectInstanceFactory maaif) {
+		// 判空
 		Assert.notNull(maaif, "AspectInstanceFactory must not be null");
 		this.maaif = maaif;
+		// 这是为了确保MetadataAwareAspectInstanceFactory实例里面对应的Aspect实例在真正使用到的时候才真正创建出来
+		// 并且后续再用的时候会从缓存中返回
 	}
 
 
 	@Override
 	public Object getAspectInstance() {
+		// 从缓存中看
 		Object aspectInstance = this.materialized;
 		if (aspectInstance == null) {
 			Object mutex = this.maaif.getAspectCreationMutex();
 			if (mutex == null) {
+				// 创建
 				aspectInstance = this.maaif.getAspectInstance();
 				this.materialized = aspectInstance;
 			}

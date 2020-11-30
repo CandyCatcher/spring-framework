@@ -131,8 +131,20 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 	@Nullable
 	private BeanFactory beanFactory;
 
+	/*
+	当在实例化前置方法 postProcessBeforeInstantiation 中创建了代理类,
+	则在 targetSourcedBeans 中将添加 beanName,
+	也就是 targetSourcedBeans 中含有 beanName
+	则说明这个类被动态代理了
+	 */
 	private final Set<String> targetSourcedBeans = Collections.newSetFromMap(new ConcurrentHashMap<>(16));
 
+	/*
+	当 Bean 被循环引用, 并且被暴露了,
+	则会通过 getEarlyBeanReference 来创建代理类;
+	通过判断 earlyProxyReferences 中
+	是否存在 beanName 来决定是否需要对 target 进行动态代理
+	 */
 	private final Map<Object, Object> earlyProxyReferences = new ConcurrentHashMap<>(16);
 
 	private final Map<Object, Class<?>> proxyTypes = new ConcurrentHashMap<>(16);
@@ -238,6 +250,9 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 	当你调用Object earlySingletonReference = getSingleton(beanName, false);时候就会触发，
 	其实还有一个地方exposedObject = initializeBean(beanName, exposedObject, mbd);
 	也会触发导致返回一个代理对象
+
+
+	循环依赖的织入入口
 	 */
 	@Override
 	public Object getEarlyBeanReference(Object bean, String beanName) {
@@ -254,6 +269,12 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 	}
 
 	/*
+	 * 根据开发经验，需要拿着所有的Aspect和业务bean进行匹配，只有匹配的Aspect才创建对应的动态代理
+	 * 在匹配前，需要IOC容器将所有的Aspect和对应的Advice都加载好并缓存起来
+	 *
+	 * 横切逻辑的加载主要是在这里，bean的实例化之前调用的
+	 * 上层调用栈：AbstractAutowireCapableBeanFactory.resolveBeforeInstantiation
+	 *
 	 * 可以继承这个类
 	 *
 	 * 在创建Bean的流程中还没调用构造器来实例化Bean的时候进行调用(实例化前后)
@@ -269,16 +290,17 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 		// 获取BeanClass的缓存key
 		Object cacheKey = getCacheKey(beanClass, beanName);
 
-		// targetSourcedBeans。供类内部使用的缓存
+		// targetSourcedBeans是什么呢？供类内部使用的缓存
 		if (!StringUtils.hasLength(beanName) || !this.targetSourcedBeans.contains(beanName)) {
 			// advisedBeans保存了所有已经做过动态代理的Bean
-			// 如果被解析过则直接返回
+			// 如果有存在则说明先前是被SpringAOP解析过的，则直接返回，之后处理doCreateBean操作
 			if (this.advisedBeans.containsKey(cacheKey)) {
 				return null;
 			}
-			// 1. 判断当前bean是否是基础类型：是否实现了Advice，Pointcut，Advisor，AopInfrastructureBean这些接口或是否是切面(@Aspect注解)
+			// 1. 判断当前bean是否是AOP的基础类型：是否实现了Advice，Pointcut，Advisor，AopInfrastructureBean这些接口或是否是切面(@Aspect注解)
 			// 2. 判断是不是应该跳过 (AOP解析直接解析出我们的切面信息，
 			// 而事务在这里是不会解析的)
+			// 如果是基础服务类的话，就将对应于该bean的cacheKey添加到advisedBeans，并且设置为false，说明是不需要包装处理的AOP基础服务bean
 			if (isInfrastructureClass(beanClass) || shouldSkip(beanClass, beanName)) {
 				this.advisedBeans.put(cacheKey, Boolean.FALSE);
 				return null;
@@ -288,8 +310,10 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 		// Create proxy here if we have a custom TargetSource.
 		// Suppresses unnecessary default instantiation of the target bean:
 		// The TargetSource will handle target instances in a custom fashion.
+		// getCustomTargetSource是spring提供给用户加入自己实现AOP创建器的地方
 		// 获取用户自定义的targetSource, 如果存在则直接在对象实例化之前进行代理创建,
 		// 避免了目标对象不必要的实例化
+		// TargetSource是干嘛的？源码
 		TargetSource targetSource = getCustomTargetSource(beanClass, beanName);
 		// 如果有自定义targetSource就要这里创建代理对象
 		// 这样做的好处是被代理的对象可以动态改变，而不是值针对一个target对象(可以对对象池中对象进行代理，可以每次创建代理都创建新对象
@@ -302,7 +326,7 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 			Object[] specificInterceptors = getAdvicesAndAdvisorsForBean(beanClass, beanName, targetSource);
 			Object proxy = createProxy(beanClass, beanName, specificInterceptors, targetSource);
 			this.proxyTypes.put(cacheKey, proxy.getClass());
-			// 返回代理的对象
+			// 返回代理的对象，这里返回了一个不为null的bean，不会再进行后续的createBean了
 			return proxy;
 		}
 
@@ -322,13 +346,26 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 	/*
 	首先该方法会从缓存里获取bean实例返回
 	该实现方法是创建AOP的核心
+
+	正常流程的织入入口
 	 */
 	@Override
 	public Object postProcessAfterInitialization(@Nullable Object bean, String beanName) {
 		if (bean != null) {
 			// 从缓存中获取bean实例，也就是如果之前加工过直接返回，这样就能确保加工后的bean实例和之前是一个
+			/*
+			如果之前生成过动态代理或者生成过bean对应的切面对象实例，又或者之前被验证过不需要进行切面逻辑的织入
+			则能够通过key的值从缓存中取到相应的结果
+			 */
 			Object cacheKey = getCacheKey(bean.getClass(), beanName);
+			/*
+			当 Bean 被循环引用, 并且被暴露了,
+			则会通过 getEarlyBeanReference 来创建代理类;
+			通过判断 earlyProxyReferences 中
+			是否存在 beanName 来决定是否需要对 target 进行动态代理
+			 */
 			if (this.earlyProxyReferences.remove(cacheKey) != bean) {
+				// 该方法会返回代理类
 				return wrapIfNecessary(bean, beanName, cacheKey);
 			}
 		}
@@ -365,27 +402,41 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 	 * @return a proxy wrapping the bean, or the raw bean instance as-is
 	 */
 	protected Object wrapIfNecessary(Object bean, String beanName, Object cacheKey) {
+		// 存在过名字证明已经被处理过
 		if (StringUtils.hasLength(beanName) && this.targetSourcedBeans.contains(beanName)) {
 			return bean;
 		}
+		// 不需要被织入逻辑的
 		if (Boolean.FALSE.equals(this.advisedBeans.get(cacheKey))) {
 			return bean;
 		}
+		// 是不是基础的bean 是不是需要跳过的
+		/*
+		 这里重复执行一遍是担心有的Advisor bean因为循环依赖在前面执行postProcessorBeforeInitialization的时候处在正在创建中的状态
+		不能添加到容器中，这里会再进行一次尝试。同时对于非单例的Aspect来讲，有必要在这里重新再判断一下，毕竟是不经过缓存的
+		 */
 		if (isInfrastructureClass(bean.getClass()) || shouldSkip(bean.getClass(), beanName)) {
 			this.advisedBeans.put(cacheKey, Boolean.FALSE);
 			return bean;
 		}
 
 		// Create proxy if we have advice.
+		// 返回匹配当前Bean的所有Advice\Advisor\Interceptor
+		/*
+		先前获取到容器中所有的的Advisor,需要进行验证这些Advisors有没有匹配当前的bean，也就是helloservice
+		 */
 		Object[] specificInterceptors = getAdvicesAndAdvisorsForBean(bean.getClass(), beanName, null);
 		if (specificInterceptors != DO_NOT_PROXY) {
+			// true表示进行过AOP处理了
 			this.advisedBeans.put(cacheKey, Boolean.TRUE);
+			// 创建Bean对应的代理，SingletonTargetSource用于封装实现类的信息
 			Object proxy = createProxy(
 					bean.getClass(), beanName, specificInterceptors, new SingletonTargetSource(bean));
+			// 创建完动态代理实例，将代理实例保存到缓存里
 			this.proxyTypes.put(cacheKey, proxy.getClass());
 			return proxy;
 		}
-
+		// 该Bean是不需要进行代理织入的，下次就不需要重复生成了
 		this.advisedBeans.put(cacheKey, Boolean.FALSE);
 		return bean;
 	}
@@ -403,6 +454,8 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 	 * @see #shouldSkip
 	 */
 	protected boolean isInfrastructureClass(Class<?> beanClass) {
+		// 判断beanClass是否是继承自Advice或Pointcut或Advisor或AopInfrastructureBean
+		// 该beanCLass就是基础服务类
 		boolean retVal = Advice.class.isAssignableFrom(beanClass) ||
 				Pointcut.class.isAssignableFrom(beanClass) ||
 				Advisor.class.isAssignableFrom(beanClass) ||
@@ -474,29 +527,72 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 	 */
 	protected Object createProxy(Class<?> beanClass, @Nullable String beanName,
 			@Nullable Object[] specificInterceptors, TargetSource targetSource) {
-
+		// 如果beanFactory是ConfigurableListableBeanFactory的类型，暴露目标类
+		// 将被代理前的class对象作为BeanDefinition的属性设置到被代理的bean对应的BeanDefinition
 		if (this.beanFactory instanceof ConfigurableListableBeanFactory) {
 			AutoProxyUtils.exposeTargetClass((ConfigurableListableBeanFactory) this.beanFactory, beanName, beanClass);
 		}
-
+		// 创建一个ProxyFactory，当前ProxyCreator在创建代理时将需要用到的字段赋值到ProxyFactory中去
 		ProxyFactory proxyFactory = new ProxyFactory();
+		// 将当前的AnnotationAwareAspectJAutoProxyCreator 对象的属性（五个属性）赋值给ProxyFactory对象
 		proxyFactory.copyFrom(this);
-
+		// 处理 proxyTargetClass 属性
+		// 如果希望使用 CGLIB 来代理接口，可以配置
+		// proxy-target-class="true",这样不管有没有接口，都使用 CGLIB 来生成代理：
+		// <aop:config proxy-target-class="true"></aop:config>
 		if (!proxyFactory.isProxyTargetClass()) {
 			if (shouldProxyTargetClass(beanClass, beanName)) {
 				proxyFactory.setProxyTargetClass(true);
 			}
 			else {
+				// 通过判断有没有接口，决定使用JDK还是CGLIB
+				// 1. 有接口的，调用一次或多次：proxyFactory.addInterface(ifc);
+				// 2. 没有接口的，调用：proxyFactory.setProxyTargetClass(true);
 				evaluateProxyInterfaces(beanClass, proxyFactory);
 			}
 		}
-
+		/*
+	 * public class AfterAdvice implements AfterReturningAdvice {
+	 *
+	 *     public void afterReturning(Object o, Method method, Object[] objects, Object o1) throws Throwable {
+	 *         System.out.println("AfterAdvice方法执行完成了");
+	 *         System.out.println(method.getName()+";"+o1.getClass());
+	 *     }
+	 * }
+	 *
+	 * class TracingInterceptor implements MethodInterceptor {
+	 *   Object invoke(MethodInvocation i) throws Throwable {
+	 *     System.out.println("method "+i.getMethod()+" is called on "+
+	 *                        i.getThis()+" with args "+i.getArguments());
+	 *     Object ret=i.proceed();
+	 *     System.out.println("method "+i.getMethod()+" returns "+ret);
+	 *     return ret;
+	 *   }
+	 * }
+	 *
+	 *		<bean id="tracingInterceptor" class="com.imooc.web.interceptor.TracingInterceptor"/>
+	 * 	<aop:config proxy-target-class="true">
+	 * 		<aop:pointcut id="controllerMethodPointcut" expression="execution(* com.imooc.web.controller..*(..)) />
+	 * 		<aop:advisor advice-ref="tracingInterceptor" pointcut-ref="controllerMethodPointcut" />
+	 *		</aop:config>
+		 */
+		// 这个方法主要来对前面传递进来的横切逻辑实例进行包装
+		// 注意：如果 specificInterceptors 中有 Advice 和 Interceptor，它们也会被包装成 Advisor
+		// 方法会整理合并得到最终的advisors （毕竟interceptorNames还指定了一些拦截器的）
+		// 至于调用的先后顺序，通过方法里的applyCommonInterceptorsFirst参数可以进行设置，
+		// 若applyCommonInterceptorsFirst为true，interceptorNames属性指定的Advisor优先调用。默认为true
 		Advisor[] advisors = buildAdvisors(beanName, specificInterceptors);
 		proxyFactory.addAdvisors(advisors);
 		proxyFactory.setTargetSource(targetSource);
+		// 这个方法是交给子类的，子类可以继续去定制此proxyFactory
+		// 用户有没有改造proxyFactory
 		customizeProxyFactory(proxyFactory);
 
 		proxyFactory.setFrozen(this.freezeProxy);
+		// 设置preFiltered的属性值，默认是false。子类：AbstractAdvisorAutoProxyCreator修改为true
+		// preFiltered字段意思为：是否已为特定目标类筛选Advisor
+		// 这个字段和DefaultAdvisorChainFactory.getInterceptorsAndDynamicInterceptionAdvice获取所有的Advisor有关
+		//CglibAopProxy和JdkDynamicAopProxy都会调用此方法，然后递归执行所有的Advisor
 		if (advisorsPreFiltered()) {
 			proxyFactory.setPreFiltered(true);
 		}
@@ -542,13 +638,21 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 	 */
 	protected Advisor[] buildAdvisors(@Nullable String beanName, @Nullable Object[] specificInterceptors) {
 		// Handle prototypes correctly...
+		// 解析interceptorNames而来得Advisor数组
+		// interceptorNames 一批横切逻辑
 		Advisor[] commonInterceptors = resolveInterceptorNames();
 
 		List<Object> allInterceptors = new ArrayList<>();
 		if (specificInterceptors != null) {
+			// 添加参数传进来的，即前面解析出来的advisors
 			allInterceptors.addAll(Arrays.asList(specificInterceptors));
+			// 添加拦截器
+			// 调用的先后顺序，通过applyCommonInterceptorsFirst参数可以进行设置，
+			// 若applyCommonInterceptorsFirst为true，interceptorNames属性指定的Advisor优先调用。
+			// 默认为true
 			if (commonInterceptors.length > 0) {
 				if (this.applyCommonInterceptorsFirst) {
+					// commonInterceptors先于specificInterceptors执行
 					allInterceptors.addAll(0, Arrays.asList(commonInterceptors));
 				}
 				else {
@@ -562,9 +666,11 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 			logger.trace("Creating implicit proxy for bean '" + beanName + "' with " + nrOfCommonInterceptors +
 					" common interceptors and " + nrOfSpecificInterceptors + " specific interceptors");
 		}
-
+		// 由于specificInterceptors可能会存在不是Advisor的横切逻辑，所以还回去调用wrap方法，将其转换为advisors类型
+		// 把拦截器包装为Advisor
 		Advisor[] advisors = new Advisor[allInterceptors.size()];
 		for (int i = 0; i < allInterceptors.size(); i++) {
+			// wrap包装
 			advisors[i] = this.advisorAdapterRegistry.wrap(allInterceptors.get(i));
 		}
 		return advisors;
@@ -578,11 +684,29 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 		BeanFactory bf = this.beanFactory;
 		ConfigurableBeanFactory cbf = (bf instanceof ConfigurableBeanFactory ? (ConfigurableBeanFactory) bf : null);
 		List<Advisor> advisors = new ArrayList<>();
+		/*
+		 * <bean id="roleService"
+		 *         class="org.springframework.aop.framework.ProxyFactoryBean">
+		 *         <property name="proxyInterfaces"
+		 *             value="com.imooc.service.RoleService" />
+		 *         <property name="target">
+		 *             <bean  class="com.imooc.service.impl.RoleServiceImpl" />
+		 *         </property>
+		 *         <property name="interceptorNames">
+		 *             <list>
+		 *                 <value>decorateBeforeAdvice</value>
+		 *                 <value>transactionAdvisor</value>
+		 *                 <value>roleDecorateInterceptor</value>
+		 *             </list>
+		 *         </property>
+		 *     </bean>
+		 */
 		for (String beanName : this.interceptorNames) {
+			// 将满足无视正在创建的横切逻辑实例转为Advisor
 			if (cbf == null || !cbf.isCurrentlyInCreation(beanName)) {
 				Assert.state(bf != null, "BeanFactory required for resolving interceptor names");
 				Object next = bf.getBean(beanName);
-				advisors.add(this.advisorAdapterRegistry.wrap(next));
+				advisors.add(this.advisorAdapterRegistry. wrap(next));
 			}
 		}
 		return advisors.toArray(new Advisor[0]);

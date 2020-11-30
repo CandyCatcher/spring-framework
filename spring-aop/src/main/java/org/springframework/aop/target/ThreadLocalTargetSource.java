@@ -48,6 +48,9 @@ import org.springframework.core.NamedThreadLocal;
  * @see ThreadLocalTargetSourceStats
  * @see org.springframework.beans.factory.DisposableBean#destroy()
  */
+/*
+会为每一个线程创建一个当前被代理对象独有的TargetSource
+ */
 @SuppressWarnings("serial")
 public class ThreadLocalTargetSource extends AbstractPrototypeBasedTargetSource
 		implements ThreadLocalTargetSourceStats, DisposableBean {

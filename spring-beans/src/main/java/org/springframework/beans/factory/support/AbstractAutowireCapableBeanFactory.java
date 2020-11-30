@@ -443,6 +443,9 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	}
 
 	/*
+	 springAOP是通过bean级别的后置处理器在bean的生命周期中对bean进行包装的
+	 但是在bean创建完成后，再进行介入的点就不多了
+	 基本上就只剩这一个入口
 	 * 在这里对后置处理器创建出来的bean进行包装
 	 */
 	@Override
@@ -714,6 +717,11 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			// 4: 调用bean初始化的后置（BeanPostProcessor）操作
 			/*
 			初始化bean
+
+			动态代理对象的创建不需要也不会去干预bean的实例化、属性赋值以及初始化
+			初始化结束意味着bean的创建完成
+			因此，spring会等到bean初始化结束，也就是执行完invokeMethods方法之后
+			才会将相关的横切逻辑织入到bean里
 			 */
 			exposedObject = initializeBean(beanName, exposedObject, mbd);
 		}

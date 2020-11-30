@@ -135,6 +135,7 @@ public class AspectJExpressionPointcut extends AbstractExpressionPointcut
 	 * @param paramTypes the parameter types for the pointcut
 	 */
 	public AspectJExpressionPointcut(Class<?> declarationScope, String[] paramNames, Class<?>[] paramTypes) {
+		// declarationScope就是当前的Aspect实例
 		this.pointcutDeclarationScope = declarationScope;
 		if (paramNames.length != paramTypes.length) {
 			throw new IllegalStateException(
@@ -267,11 +268,18 @@ public class AspectJExpressionPointcut extends AbstractExpressionPointcut
 		return obtainPointcutExpression();
 	}
 
+	/*
+	class级别的匹配
+	 */
 	@Override
 	public boolean matches(Class<?> targetClass) {
+		// 获取类里的pointcut表达式
 		PointcutExpression pointcutExpression = obtainPointcutExpression();
 		try {
 			try {
+				// 还记得不，自研方法里面的初筛方法，只能匹配部分表达式（如within）
+				// 不支持execution等表达式的部分写法
+				// 当execution表达式具体到某个类的时候返回false
 				return pointcutExpression.couldMatchJoinPointsInType(targetClass);
 			}
 			catch (ReflectionWorldException ex) {
@@ -289,20 +297,28 @@ public class AspectJExpressionPointcut extends AbstractExpressionPointcut
 		return false;
 	}
 
+	/*
+	method级别的匹配
+	 */
 	@Override
 	public boolean matches(Method method, Class<?> targetClass, boolean hasIntroductions) {
+		// 1.检查pointcut表达式,并缓存
 		obtainPointcutExpression();
+        // 2.获取ShadowMatch对象并缓存
 		ShadowMatch shadowMatch = getTargetShadowMatch(method, targetClass);
 
 		// Special handling for this, target, @this, @target, @annotation
 		// in Spring - we can optimize since we know we have exactly this class,
 		// and there will never be matching subclass at runtime.
+		// 3.总是匹配
 		if (shadowMatch.alwaysMatches()) {
 			return true;
 		}
+		// 3.总是不匹配
 		else if (shadowMatch.neverMatches()) {
 			return false;
 		}
+		// 其他匹配:
 		else {
 			// the maybe case
 			if (hasIntroductions) {

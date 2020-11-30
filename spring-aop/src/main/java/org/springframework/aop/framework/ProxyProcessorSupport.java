@@ -110,7 +110,7 @@ public class ProxyProcessorSupport extends ProxyConfig implements Ordered, BeanC
 	 检查给定beanClass上的接口们，并收集合法的接口交给proxyFactory处理
 	 */
 	protected void evaluateProxyInterfaces(Class<?> beanClass, ProxyFactory proxyFactory) {
-		// 找到该类实现的所有接口们
+		// 通过反射找到该类实现的所有接口们
 		Class<?>[] targetInterfaces = ClassUtils.getAllInterfacesForClass(beanClass, getProxyClassLoader());
 		// 标记：是否有存在合理的接口
 		boolean hasReasonableProxyInterface = false;
@@ -123,12 +123,13 @@ public class ProxyProcessorSupport extends ProxyConfig implements Ordered, BeanC
 		}
 		if (hasReasonableProxyInterface) {
 			// Must allow for introductions; can't just set interfaces to the target's interfaces only.
-			// 不管接口是否合理，都将其添加进去
+			// 不管接口是否合理，都将其添加进去，创建接口的实现类
 			for (Class<?> ifc : targetInterfaces) {
 				proxyFactory.addInterface(ifc);
 			}
 		}
 		else {
+			// 要求proxyFactory通过CGLIB创建动态代理
 			proxyFactory.setProxyTargetClass(true);
 		}
 	}
