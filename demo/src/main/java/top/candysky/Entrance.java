@@ -15,6 +15,8 @@ import top.candysky.dao.impl.Staff;
 import top.candysky.entity.User;
 import top.candysky.entity.factory.UserFactoryBean;
 import top.candysky.introduction.LittleUniverse;
+import top.candysky.service.HelloService;
+import top.candysky.service.HiService;
 import top.candysky.service.WelcomeService;
 
 
@@ -32,8 +34,13 @@ public class Entrance {
 		//System.out.println("hello world");
 		//String xmlPath = "D:\\spring-framework\\demo\\src\\main\\resources\\spring\\spring-config.xml";
 		//FileSystemXmlApplicationContext context = new FileSystemXmlApplicationContext(xmlPath);
-		//WelcomeService welcomeService = (WelcomeService) context.getBean("welcomeService");
+
 		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(Entrance.class);
+		HiService hiService = (HiService) context.getBean("hiServiceImpl");
+		hiService.sayHi();
+		System.out.println("-----------------------------执行HelloService----------------------------");
+		HelloService helloService = (HelloService) context.getBean("helloServiceImpl");
+		helloService.helloService();
 		/*
 		容器在初始化的时候不是创建了bean实例了吗？为什么这里要显示调用呢？
 		AbstractApplicationContext的refresh方法初始化的是非延迟加载的单例
@@ -63,9 +70,9 @@ public class Entrance {
 		//System.out.println(welcomeController.getDestroyMethodName());
 		//System.out.println(welcomeController.toString());
 
-//		User userBean = (User) context.getBean("userFactoryBean");
+		//User userBean = (User) context.getBean("userPoster");
 		// 这样得到的是userFactoryBean调用getObjective得到的user实例
-//		System.out.println(userBean);
+		//System.out.println("CustomizedBeanDefinitionRegistryPostProcessor创建的对象" + userBean);
 
 //		UserFactoryBean userFactoryBean = (UserFactoryBean) context.getBean("&userFactoryBean");
 //		System.out.println(userFactoryBean);
@@ -80,24 +87,22 @@ public class Entrance {
 		//	System.out.println("0");
 		//}
 
-
-
 		//String[] beanDefinitionNames = context.getBeanDefinitionNames();
 		//for (String beanDefinitionName : beanDefinitionNames) {
 		//
 		//	System.out.println(beanDefinitionName);
 		//}
 		//WelcomeService welcomeService = (WelcomeService) context.getBean("welcomeServiceImpl");
-//		welcomeService.sayHello("success");
+		//welcomeService.sayHello("success");
 		//WelcomeController welcomeController = (WelcomeController) context.getBean("welcomeController");
 		//welcomeController.handleRequest();
 
-		System.out.println("============================AOP登场================================");
+		//System.out.println("============================AOP登场================================");
 		//HelloController helloController = (HelloController) context.getBean("helloController");
-		HiController hiController = (HiController) context.getBean("hiController");
+		//HiController hiController = (HiController) context.getBean("hiController");
 		//hiController.handleRequest();
 		//helloController.handleRequest();
-		((LittleUniverse)hiController).burningUp();
+		//((LittleUniverse)hiController).burningUp();
 
 	}
 }

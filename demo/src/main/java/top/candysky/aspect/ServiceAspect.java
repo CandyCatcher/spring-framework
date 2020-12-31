@@ -3,6 +3,7 @@ package top.candysky.aspect;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.*;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import top.candysky.introduction.LittleUniverse;
 
@@ -25,6 +26,7 @@ import top.candysky.introduction.LittleUniverse;
 spring会使用类实现
  */
 @Aspect
+@Order(1)
 @Component
 public class ServiceAspect {
 	/**

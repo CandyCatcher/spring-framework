@@ -19,7 +19,7 @@ public class CustomizedBeanDefinitionRegistryPostProcessor implements BeanDefini
 	 */
 	@Override
 	public void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry registry) throws BeansException {
-//		获取到User的对象
+		//	获取到User的对象
 		Class<?> clazz = User.class;
 		BeanDefinitionBuilder builder = BeanDefinitionBuilder.genericBeanDefinition(clazz);
 		GenericBeanDefinition definition = (GenericBeanDefinition) builder.getRawBeanDefinition();
